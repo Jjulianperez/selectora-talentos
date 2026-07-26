@@ -1,3 +1,4 @@
+import { Users, Handshake, BookOpen, Scale, TrendingUp, Target, MessageCircle } from 'lucide-react';
 import type { TabId } from '../../lib/types';
 
 interface Props {
@@ -5,12 +6,12 @@ interface Props {
 }
 
 const servicios = [
-  { titulo: "Reclutamiento y Selección", desc: "Captamos y evaluamos perfiles estratégicos para impulsar el crecimiento de tu organización.", icon: "👥", color: "text-cyan-400", bg: "bg-cyan-900/10" },
-  { titulo: "Contrataciones Eventuales", desc: "Soluciones de personal ágiles y flexibles para cubrir necesidades temporales o proyectos específicos.", icon: "🤝", color: "text-emerald-400", bg: "bg-emerald-900/10" },
-  { titulo: "Capacitación y Desarrollo", desc: "Programas diseñados para potenciar competencias y maximizar el potencial de tus equipos.", icon: "📖", color: "text-purple-400", bg: "bg-purple-900/10" },
-  { titulo: "Mediación y Resolución de Conflictos", desc: "Gestión profesional de incidencias laborales para fomentar un clima organizacional armónico.", icon: "⚖️", color: "text-orange-400", bg: "bg-orange-900/10" },
-  { titulo: "Evaluación de Desempeño y Clima", desc: "Diagnósticos precisos sobre el ambiente de trabajo y el rendimiento para tomar decisiones estratégicas.", icon: "📈", color: "text-blue-400", bg: "bg-blue-900/10" },
-  { titulo: "Onboarding e Integración", desc: "Acompañamos la adaptación de nuevos colaboradores para asegurar su retención y productividad.", icon: "🎯", color: "text-pink-400", bg: "bg-pink-900/10" },
+  { titulo: "Reclutamiento y Selección", desc: "Captamos y evaluamos perfiles estratégicos para impulsar el crecimiento de tu organización.", icon: <Users className="w-7 h-7" />, color: "text-cyan-400", bg: "bg-cyan-900/10" },
+  { titulo: "Contrataciones Eventuales", desc: "Soluciones de personal ágiles y flexibles para cubrir necesidades temporales o proyectos específicos.", icon: <Handshake className="w-7 h-7" />, color: "text-emerald-400", bg: "bg-emerald-900/10" },
+  { titulo: "Capacitación y Desarrollo", desc: "Programas diseñados para potenciar competencias y maximizar el potencial de tus equipos.", icon: <BookOpen className="w-7 h-7" />, color: "text-purple-400", bg: "bg-purple-900/10" },
+  { titulo: "Mediación y Resolución de Conflictos", desc: "Gestión profesional de incidencias laborales para fomentar un clima organizacional armónico.", icon: <Scale className="w-7 h-7" />, color: "text-orange-400", bg: "bg-orange-900/10" },
+  { titulo: "Evaluación de Desempeño y Clima", desc: "Diagnósticos precisos sobre el ambiente de trabajo y el rendimiento para tomar decisiones estratégicas.", icon: <TrendingUp className="w-7 h-7" />, color: "text-blue-400", bg: "bg-blue-900/10" },
+  { titulo: "Onboarding e Integración", desc: "Acompañamos la adaptación de nuevos colaboradores para asegurar su retención y productividad.", icon: <Target className="w-7 h-7" />, color: "text-pink-400", bg: "bg-pink-900/10" },
 ];
 
 export default function Home({ onNavigate }: Props) {
@@ -35,14 +36,14 @@ export default function Home({ onNavigate }: Props) {
               <div className="absolute inset-0 bg-[#E6CA65] opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none"></div>
               <div className="relative z-10 animate-float">
                 <div className={`w-16 h-16 flex items-center justify-center rounded-full ${s.bg} border border-[#333]`}>
-                  <span className={`text-3xl ${s.color}`}>{s.icon}</span>
+                  <span className={s.color}>{s.icon}</span>
                 </div>
               </div>
               <h4 className="relative z-10 font-bold text-xl shimmer-text">{s.titulo}</h4>
               <p className="relative z-10 text-sm text-gray-400 leading-relaxed">{s.desc}</p>
               <a href="https://wa.me/5492657234459" target="_blank" rel="noopener noreferrer"
-                className="relative z-10 mt-2 text-xs text-green-400 flex items-center gap-1 hover:underline border border-green-900/50 px-4 py-2 rounded-full bg-green-900/10 hover:bg-green-900/20 transition-colors">
-                💬 Solicita más información
+                className="relative z-10 mt-2 text-xs text-green-400 flex items-center gap-1.5 hover:underline border border-green-900/50 px-4 py-2 rounded-full bg-green-900/10 hover:bg-green-900/20 transition-colors">
+                <MessageCircle className="w-3.5 h-3.5" /> Solicita más información
               </a>
             </div>
           ))}

@@ -22,6 +22,7 @@ export interface Candidate {
   localidad: string;
   provincia: string;
   linkedin: string;
+  sector: string;
   puesto: string;
   buena_conducta: string;
   carnet_manejo: string;
@@ -34,9 +35,7 @@ export interface Candidate {
   anios_exp: string;
   ultimo_cargo: string;
   ultima_empresa: string;
-  cv_file_url: string;
-  cv_file_name: string;
-  adjuntos: Attachment[];
+  cv: Attachment | null;
   test_results: TestResult[];
   observaciones: string;
 }
@@ -65,4 +64,4 @@ export interface Notification {
   read: boolean;
 }
 
-export type TabId = 'inicio' | 'postulate' | 'vacantes' | 'novedades' | 'tests' | 'admin';
+export type TabId = 'inicio' | 'postulate' | 'vacantes' | 'novedades' | 'tests';

@@ -18,38 +18,48 @@ body {
   background-color: #121212;
 }
 
+/* === Scrollbar === */
 .scrollbar-hide::-webkit-scrollbar { display: none; }
 .scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
 
+/* === Focus ring for accessibility === */
+*:focus-visible {
+  outline: 2px solid #E6CA65;
+  outline-offset: 2px;
+}
+input:focus-visible, select:focus-visible, textarea:focus-visible {
+  outline: none;
+  border-color: #E6CA65 !important;
+  box-shadow: 0 0 0 3px rgba(230, 202, 101, 0.15);
+}
+
+/* === Subtle gold glow (used sparingly) === */
 @keyframes goldGlow {
-  0%, 100% { text-shadow: 0 0 15px rgba(230, 202, 101, 0.5), 0 0 25px rgba(230, 202, 101, 0.3); }
-  50% { text-shadow: 0 0 30px rgba(252, 246, 186, 0.95), 0 0 40px rgba(230, 202, 101, 0.8); }
+  0%, 100% { text-shadow: 0 0 12px rgba(230, 202, 101, 0.3); }
+  50% { text-shadow: 0 0 20px rgba(230, 202, 101, 0.5); }
 }
-.glow-gold { animation: goldGlow 3s infinite ease-in-out; }
+.glow-gold { animation: goldGlow 4s infinite ease-in-out; }
 
-@keyframes pulseText {
-  0%, 100% { opacity: 1; letter-spacing: 0.05em; }
-  50% { opacity: 0.9; letter-spacing: 0.08em; }
-}
-.animate-pulse-text { animation: pulseText 4s infinite ease-in-out; }
-
-@keyframes lineAppear {
-  0%, 100% { width: 0; opacity: 0; }
-  50% { width: 100%; opacity: 1; }
+/* === Header gold line: animate once on load, then stay === */
+@keyframes lineAppearOnce {
+  0% { width: 0; opacity: 0; }
+  100% { width: 6rem; opacity: 1; }
 }
 .animate-line-appear {
-  animation: lineAppear 4s infinite ease-in-out;
+  animation: lineAppearOnce 1.2s ease-out forwards;
   background: linear-gradient(to right, #bf953f, #fcf6ba, #bf953f);
   height: 2px;
   border-radius: 9999px;
 }
 
+/* === Float: only on hover === */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-6px); }
 }
-.animate-float { animation: float 3.5s infinite ease-in-out; }
+.service-card:hover .animate-float { animation: float 2.5s infinite ease-in-out; }
 
+/* === Shimmer text === */
 @keyframes shimmer {
   0% { background-position: -200% center; }
   100% { background-position: 200% center; }
@@ -63,68 +73,132 @@ body {
   animation: shimmer 4s linear infinite;
 }
 
+/* === Pop-in === */
 @keyframes popIn {
   0% { transform: scale(0.9); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
 .animate-pop-in { animation: popIn 0.3s ease-out forwards; }
 
-@keyframes slideIn {
-  0% { transform: translateX(100%); opacity: 0; }
+/* === Slide-in from right (notifications) === */
+@keyframes slideInRight {
+  0% { transform: translateX(120%); opacity: 0; }
   100% { transform: translateX(0); opacity: 1; }
 }
-.animate-slide-in { animation: slideIn 0.5s ease-out forwards; }
+.animate-slide-in-right { animation: slideInRight 0.4s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
 
-@keyframes pulseGreen {
-  0% { transform: scale(0.95); opacity: 0.5; }
-  50% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(0.95); opacity: 0.5; }
+/* === Slide-in from bottom (page content) === */
+@keyframes fadeUp {
+  0% { transform: translateY(12px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
-.pulse-green { animation: pulseGreen 1.5s infinite; }
+.animate-fade-up { animation: fadeUp 0.35s ease-out forwards; }
 
+/* === Slide-in from top (hamburger menu) === */
+@keyframes fadeDown {
+  0% { transform: translateY(-8px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
+}
+.animate-fade-down { animation: fadeDown 0.2s ease-out forwards; }
+
+/* === Pulse green dot === */
+@keyframes pulseGreen {
+  0%, 100% { transform: scale(0.95); opacity: 0.6; }
+  50% { transform: scale(1.1); opacity: 1; }
+}
+.pulse-green { animation: pulseGreen 2s infinite; }
+
+/* === Service card === */
 .service-card {
-  transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  transition: all 0.35s cubic-bezier(0.22, 1, 0.36, 1);
 }
 .service-card:hover {
-  transform: translateY(-8px);
-  background-color: #1F1F1F;
-  border-color: rgba(230, 202, 101, 0.25);
+  transform: translateY(-6px);
+  border-color: rgba(230, 202, 101, 0.2);
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(230, 202, 101, 0.1);
 }
 
-.checkbox-pill { transition: all 0.2s; }
+/* === News/Vacancy/Test card hover === */
+.content-card {
+  transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.content-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(230, 202, 101, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
+}
+
+/* === Checkbox pill === */
+.checkbox-pill { transition: all 0.2s ease; }
 .checkbox-pill.active {
   background-color: #E6CA65 !important;
   color: #121212 !important;
   border-color: #E6CA65 !important;
   font-weight: bold;
+  box-shadow: 0 2px 8px rgba(230, 202, 101, 0.25);
+}
+.checkbox-pill:not(.active):hover {
+  border-color: #666;
+  background-color: #2a2a2a;
 }
 
+/* === Form label === */
 .form-label {
   color: #F2D2A0;
-  font-weight: bold;
-  font-size: 0.75rem;
+  font-weight: 600;
+  font-size: 0.7rem;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.06em;
   margin-bottom: 0.25rem;
   display: block;
 }
 
+/* === Form section === */
 .form-section {
   background-color: #181818;
   border: 1px solid #2A2A2A;
   border-radius: 0.75rem;
-  padding: 1rem 1.25rem;
+  padding: 1.25rem;
   margin-bottom: 1.5rem;
+  transition: border-color 0.2s;
+}
+.form-section:hover {
+  border-color: #333;
 }
 
+/* === Form section step number === */
+.form-step {
+  position: relative;
+  padding-left: 2.5rem;
+}
+.form-step::before {
+  content: attr(data-step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 1.75rem;
+  height: 1.75rem;
+  background: linear-gradient(135deg, #E6CA65, #d8bd58);
+  color: #121212;
+  font-weight: 800;
+  font-size: 0.75rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* === Media thumbnail === */
 .media-thumb {
   position: relative;
   width: 100%;
   padding-bottom: 100%;
   overflow: hidden;
   border-radius: 0.5rem;
-  border: 1px solid #444;
+  border: 1px solid #333;
+  transition: border-color 0.2s;
 }
+.media-thumb:hover { border-color: #555; }
 .media-thumb img, .media-thumb video {
   position: absolute;
   top: 0; left: 0;
@@ -144,6 +218,72 @@ body {
 }
 .media-thumb:hover .media-overlay { opacity: 1; }
 
+/* === Input base === */
 input, select, textarea {
   font-size: 16px !important;
+}
+input::placeholder, textarea::placeholder {
+  color: #555;
+}
+
+/* === Custom select arrow === */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.75rem center;
+  padding-right: 2.5rem !important;
+}
+
+/* === Date input dark theme fix === */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.7);
+  cursor: pointer;
+}
+
+/* === Progress bar === */
+.progress-bar {
+  height: 4px;
+  background: #2A2A2A;
+  border-radius: 9999px;
+  overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #E6CA65, #fcf6ba);
+  border-radius: 9999px;
+  transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* === WhatsApp float button === */
+@keyframes waPulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4); }
+  50% { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
+}
+.wa-float {
+  animation: waPulse 2.5s infinite;
+}
+
+/* === Inline validation === */
+.field-error input,
+.field-error select,
+.field-error textarea {
+  border-color: #ef4444 !important;
+  box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+}
+.field-error-msg {
+  color: #f87171;
+  font-size: 0.7rem;
+  margin-top: 0.25rem;
+}
+
+/* === Button disabled === */
+button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* === iOS safe area for bottom nav === */
+.safe-area-bottom {
+  padding-bottom: env(safe-area-inset-bottom, 0);
 }

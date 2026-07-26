@@ -1,11 +1,15 @@
-﻿import { useState } from 'react';
+﻿import { useState, useEffect } from 'react';
+import { CheckCircle, Paperclip, AlertCircle } from 'lucide-react';
 import { areasATS, habilidadesATS } from '../../data/areas';
 import { supabase, BUCKET_NAME } from '../../lib/supabase';
+import Modal from '../ui/Modal';
 import type { TabId, Attachment } from '../../lib/types';
 
 interface Props {
   onNavigate: (tab: TabId) => void;
   onPostulation: (msg: string) => void;
+  preselectVacancy?: string | null;
+  onVacancyConsumed?: () => void;
 }
 
 interface PostForm {
@@ -19,6 +23,7 @@ interface PostForm {
   localidad: string;
   provincia: string;
   linkedin: string;
+  sector: string;
   puesto: string;
   buenaConducta: string;
   carnetManejo: string;
@@ -37,21 +42,52 @@ interface PostForm {
 const emptyForm: PostForm = {
   tipoPostulacion: 'espontanea', vacanteSeleccionada: '',
   nombre: '', dni: '', fechaNac: '', telefono: '', email: '',
-  localidad: '', provincia: '', linkedin: '', puesto: '',
+  localidad: '', provincia: '', linkedin: '', sector: '', puesto: '',
   buenaConducta: 'No', carnetManejo: 'No posee',
   nivelEducativo: '', titulo: '', areasExp: [], areasExpOtros: '',
   habilidades: [], habilidadesOtros: '', aniosExp: '', ultimoCargo: '',
   ultimaEmpresa: '', cv: null,
 };
 
-const inputClass = "w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-base mt-1";
+const inputClass = "w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-base mt-1 transition-colors duration-200";
 
-export default function Postulate({ onNavigate, onPostulation }: Props) {
+export default function Postulate({ onNavigate, onPostulation, preselectVacancy, onVacancyConsumed }: Props) {
   const [form, setForm] = useState<PostForm>(emptyForm);
   const [submitted, setSubmitted] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [submitError, setSubmitError] = useState('');
+  const [vacancies, setVacancies] = useState<{ id: string; titulo: string }[]>([]);
+
+  useEffect(() => {
+    supabase.from('vacancies').select('id, titulo').order('created_at', { ascending: false }).then(({ data }) => {
+      if (data) setVacancies(data);
+    });
+  }, []);
+
+  useEffect(() => {
+    if (preselectVacancy) {
+      setForm(prev => ({
+        ...prev,
+        tipoPostulacion: 'puesto',
+        vacanteSeleccionada: preselectVacancy,
+        puesto: preselectVacancy,
+      }));
+      onVacancyConsumed?.();
+    }
+  }, [preselectVacancy, onVacancyConsumed]);
+
+  const validate = (): boolean => {
+    const e: Record<string, string> = {};
+    if (!form.nombre.trim()) e.nombre = 'El nombre es obligatorio';
+    if (form.areasExp.length === 0) e.areasExp = 'Seleccioná al menos un área';
+    if (form.habilidades.length === 0) e.habilidades = 'Seleccioná al menos una habilidad';
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
 
   const toggleArray = (field: 'areasExp' | 'habilidades', value: string) => {
+    setErrors(prev => { const n = { ...prev }; delete n[field]; return n; });
     setForm(prev => {
       const arr = prev[field];
       const isActive = arr.includes(value);
@@ -68,22 +104,34 @@ export default function Postulate({ onNavigate, onPostulation }: Props) {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.nombre) return alert('Por favor, completa tu Nombre y Apellido.');
-    if (form.areasExp.length === 0) return alert('Debes seleccionar al menos un Área de Experiencia.');
-    if (form.habilidades.length === 0) return alert('Debes seleccionar al menos una Habilidad.');
+    if (!validate()) return;
 
     setUploading(true);
+    setSubmitError('');
 
     let cvData = form.cv;
     if (form.cv && form.cv.url.startsWith('blob:')) {
-      const fileExt = form.cv.nombre.split('.').pop();
-      const filePath = `cvs/${Date.now()}_${form.nombre.replace(/\s+/g, '_')}.${fileExt}`;
-      const response = await fetch(form.cv.url);
-      const blob = await response.blob();
-      const { data: uploadData } = await supabase.storage.from(BUCKET_NAME).upload(filePath, blob);
-      if (uploadData) {
-        const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(uploadData.path);
-        cvData = { nombre: form.cv.nombre, tipo: 'documento', url: urlData.publicUrl };
+      try {
+        const fileExt = form.cv.nombre.split('.').pop();
+        const filePath = `cvs/${Date.now()}_${form.nombre.replace(/\s+/g, '_')}.${fileExt}`;
+        const response = await fetch(form.cv.url);
+        const blob = await response.blob();
+        const { data: uploadData, error: uploadError } = await supabase.storage.from(BUCKET_NAME).upload(filePath, blob);
+        if (uploadError) {
+          console.error('Error subiendo CV:', uploadError);
+          setSubmitError('Error al subir el CV. Intentá nuevamente.');
+          setUploading(false);
+          return;
+        }
+        if (uploadData) {
+          const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(uploadData.path);
+          cvData = { nombre: form.cv.nombre, tipo: 'documento', url: urlData.publicUrl };
+        }
+      } catch (err) {
+        console.error('Error procesando CV:', err);
+        setSubmitError('Error al procesar el archivo del CV. Intentá con otro archivo.');
+        setUploading(false);
+        return;
       }
     }
 
@@ -97,7 +145,7 @@ export default function Postulate({ onNavigate, onPostulation }: Props) {
       vacante_seleccionada: form.vacanteSeleccionada,
       nombre: form.nombre, dni: form.dni, fecha_nac: form.fechaNac,
       telefono: form.telefono, email: form.email, localidad: form.localidad,
-      provincia: form.provincia, linkedin: form.linkedin, puesto: puestoFinal,
+      provincia: form.provincia, linkedin: form.linkedin, sector: form.sector, puesto: puestoFinal,
       buena_conducta: form.buenaConducta, carnet_manejo: form.carnetManejo,
       nivel_educativo: form.nivelEducativo, titulo: form.titulo,
       areas_exp: form.areasExp, areas_exp_otros: form.areasExpOtros,
@@ -108,7 +156,12 @@ export default function Postulate({ onNavigate, onPostulation }: Props) {
     };
 
     const { error } = await supabase.from('candidates').insert(candidate);
-    if (error) console.error('Error:', error);
+    if (error) {
+      console.error('Error guardando postulación:', error);
+      setSubmitError('Error al guardar la postulación. Verificá tus datos e intentá nuevamente.');
+      setUploading(false);
+      return;
+    }
 
     setUploading(false);
     setSubmitted(true);
@@ -128,46 +181,80 @@ export default function Postulate({ onNavigate, onPostulation }: Props) {
   );
 
   return (
-    <div className="w-full bg-[#1A1A1A] p-4 sm:p-6">
+    <div className="w-full bg-[#1A1A1A] p-4 sm:p-6 rounded-xl border border-[#2A2A2A]">
       <h2 className="text-2xl sm:text-3xl font-bold text-[#E6CA65] mb-2">Postulate</h2>
       <p className="text-sm text-gray-400 mb-8">
         Puedes postularte de manera <strong className="text-[#F2D2A0]">espontánea para nuestra base de datos</strong> o aplicar a un puesto específico. ¡Te permitimos postularte la cantidad de veces que necesites!
       </p>
 
-      {submitted ? (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-pop-in">
-          <div className="bg-[#1A1A1A] border border-[#E6CA65]/40 rounded-xl w-full max-w-md p-8 text-center shadow-2xl flex flex-col items-center gap-4">
-            <div className="w-20 h-20 rounded-full bg-[#E6CA65]/10 flex items-center justify-center text-[#E6CA65] text-5xl border border-[#E6CA65]/30">✓</div>
-            <div className="space-y-2">
-              <p className="text-gray-200 text-lg font-light">gracias por sumarte a nuestro equipo, pronto nos pondremos en contacto</p>
-              <h3 className="text-2xl font-bold text-[#E6CA65] tracking-wide">CV Consultora</h3>
-            </div>
-            <button onClick={() => setSubmitted(false)} className="mt-4 bg-[#E6CA65] text-black font-bold py-2 px-8 rounded-lg hover:bg-[#d8bd58] transition text-sm">Cerrar</button>
+      <Modal open={submitted} onClose={() => setSubmitted(false)} size="sm">
+        <div className="p-8 text-center flex flex-col items-center gap-4">
+          <div className="w-20 h-20 rounded-full bg-[#E6CA65]/10 flex items-center justify-center border border-[#E6CA65]/20">
+            <CheckCircle className="w-10 h-10 text-[#E6CA65]" />
           </div>
+          <div className="space-y-2">
+            <p className="text-gray-200 text-lg font-light">¡Gracias por sumarte a nuestro equipo!</p>
+            <p className="text-gray-400 text-sm">Pronto nos pondremos en contacto.</p>
+            <h3 className="text-xl font-bold text-[#E6CA65] tracking-wide mt-2">CV Consultora</h3>
+          </div>
+          <button onClick={() => setSubmitted(false)} className="mt-2 bg-[#E6CA65] text-black font-bold py-2.5 px-8 rounded-lg hover:bg-[#d8bd58] transition text-sm">Cerrar</button>
         </div>
-      ) : (
+      </Modal>
+
+      {!submitted && (
         <form onSubmit={handleSubmit} className="space-y-6">
 
           <div className="form-section">
-            <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Tipo de Postulación</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="form-step" data-step="1">
+              <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Tipo de Postulación</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
               <button type="button" onClick={() => setForm({ ...form, tipoPostulacion: 'espontanea' })}
-                className={`p-4 rounded-lg border-2 transition text-center ${form.tipoPostulacion === 'espontanea' ? 'border-[#E6CA65] bg-[#252525]' : 'border-[#444] hover:border-[#666]'}`}>
+                className={`p-4 rounded-lg border-2 transition-all duration-200 text-center ${form.tipoPostulacion === 'espontanea' ? 'border-[#E6CA65] bg-[#E6CA65]/5 shadow-md shadow-[#E6CA65]/5' : 'border-[#444] hover:border-[#666]'}`}>
                 <span className="block font-bold text-[#F2D2A0]">Postulación Espontánea</span>
                 <span className="text-xs text-gray-400 mt-1 block">Quiero sumar mi CV a la base de datos</span>
               </button>
               <button type="button" onClick={() => setForm({ ...form, tipoPostulacion: 'puesto' })}
-                className={`p-4 rounded-lg border-2 transition text-center ${form.tipoPostulacion === 'puesto' ? 'border-[#E6CA65] bg-[#252525]' : 'border-[#444] hover:border-[#666]'}`}>
+                className={`p-4 rounded-lg border-2 transition-all duration-200 text-center ${form.tipoPostulacion === 'puesto' ? 'border-[#E6CA65] bg-[#E6CA65]/5 shadow-md shadow-[#E6CA65]/5' : 'border-[#444] hover:border-[#666]'}`}>
                 <span className="block font-bold text-[#F2D2A0]">Puesto Específico</span>
                 <span className="text-xs text-gray-400 mt-1 block">Aplicar a una vacante publicada</span>
               </button>
             </div>
           </div>
 
+          {form.tipoPostulacion === 'puesto' && (
+            <div className="form-section animate-fade-up">
+              <div className="form-step" data-step="2">
+                <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Seleccionar Vacante</h3>
+              </div>
+              <div className="mt-4">
+                <select
+                  value={form.vacanteSeleccionada}
+                  onChange={e => setForm({ ...form, vacanteSeleccionada: e.target.value })}
+                  className={inputClass}
+                >
+                  <option value="">Elegí una vacante...</option>
+                  {vacancies.map(v => (
+                    <option key={v.id} value={v.titulo}>{v.titulo}</option>
+                  ))}
+                </select>
+                {vacancies.length === 0 && (
+                  <p className="text-xs text-gray-500 mt-2">No hay vacantes disponibles en este momento.</p>
+                )}
+              </div>
+            </div>
+          )}
+
           <div className="form-section">
-            <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Información Personal</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div><label className="form-label">Nombre y Apellido *</label><input type="text" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} className={inputClass} /></div>
+            <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '3' : '2'}>
+              <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Información Personal</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+              <div className={errors.nombre ? 'field-error' : ''}>
+                <label className="form-label">Nombre y Apellido *</label>
+                <input type="text" value={form.nombre} onChange={e => { setForm({ ...form, nombre: e.target.value }); if (errors.nombre) setErrors(p => { const n = { ...p }; delete n.nombre; return n; }); }} className={inputClass} />
+                {errors.nombre && <p className="field-error-msg flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.nombre}</p>}
+              </div>
               <div><label className="form-label">DNI</label><input type="text" value={form.dni} onChange={e => setForm({ ...form, dni: e.target.value })} className={inputClass} /></div>
               <div><label className="form-label">Fecha de Nacimiento</label><input type="date" value={form.fechaNac} onChange={e => setForm({ ...form, fechaNac: e.target.value })} className={inputClass} /></div>
               <div><label className="form-label">Teléfono</label><input type="text" value={form.telefono} onChange={e => setForm({ ...form, telefono: e.target.value })} className={inputClass} /></div>
@@ -175,12 +262,22 @@ export default function Postulate({ onNavigate, onPostulation }: Props) {
               <div><label className="form-label">Localidad</label><input type="text" value={form.localidad} onChange={e => setForm({ ...form, localidad: e.target.value })} className={inputClass} /></div>
               <div><label className="form-label">Provincia</label><input type="text" value={form.provincia} onChange={e => setForm({ ...form, provincia: e.target.value })} className={inputClass} /></div>
               <div><label className="form-label">LinkedIn (Opcional)</label><input type="text" value={form.linkedin} onChange={e => setForm({ ...form, linkedin: e.target.value })} className={inputClass} /></div>
+              <div>
+                <label className="form-label">Sector</label>
+                <select value={form.sector} onChange={e => setForm({ ...form, sector: e.target.value })} className={inputClass}>
+                  <option value="">Seleccionar...</option>
+                  <option value="Público">Público</option>
+                  <option value="Privado">Privado</option>
+                </select>
+              </div>
             </div>
           </div>
 
           <div className="form-section">
-            <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Información Profesional</h3>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+            <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '4' : '3'}>
+              <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Información Profesional</h3>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 mt-4">
               <div><label className="form-label">Puesto al que se postula (Opcional)</label><input type="text" placeholder="Ej: Administrativo" value={form.puesto} onChange={e => setForm({ ...form, puesto: e.target.value })} className={inputClass} /></div>
               <div><label className="form-label">Años de Experiencia</label><input type="number" value={form.aniosExp} onChange={e => setForm({ ...form, aniosExp: e.target.value })} className={inputClass} /></div>
               <div><label className="form-label">Certificado de Buena Conducta</label>
@@ -207,10 +304,13 @@ export default function Postulate({ onNavigate, onPostulation }: Props) {
           </div>
 
           <div className="form-section">
-            <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Filtros ATS (Selección múltiple)</h3>
-            <div className="mb-6">
+            <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '5' : '4'}>
+              <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Filtros ATS (Selección múltiple)</h3>
+            </div>
+            <div className="mb-6 mt-4">
               <label className="form-label">Áreas de Experiencia *</label>
               <CheckboxPills options={areasATS} field="areasExp" />
+              {errors.areasExp && <p className="field-error-msg flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.areasExp}</p>}
               {form.areasExp.includes('Otros') && (
                 <input type="text" placeholder="Especificar área..." value={form.areasExpOtros} onChange={e => setForm({ ...form, areasExpOtros: e.target.value })} className={inputClass + ' mt-2'} />
               )}
@@ -218,6 +318,7 @@ export default function Postulate({ onNavigate, onPostulation }: Props) {
             <div>
               <label className="form-label">Habilidades Destacadas *</label>
               <CheckboxPills options={habilidadesATS} field="habilidades" />
+              {errors.habilidades && <p className="field-error-msg flex items-center gap-1"><AlertCircle className="w-3 h-3" /> {errors.habilidades}</p>}
               {form.habilidades.includes('Otros') && (
                 <input type="text" placeholder="Especificar habilidad..." value={form.habilidadesOtros} onChange={e => setForm({ ...form, habilidadesOtros: e.target.value })} className={inputClass + ' mt-2'} />
               )}
@@ -225,19 +326,33 @@ export default function Postulate({ onNavigate, onPostulation }: Props) {
           </div>
 
           <div className="form-section">
-            <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Adjuntar CV</h3>
-            <div className="bg-[#222] p-4 rounded-lg border border-dashed border-[#444]">
+            <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '6' : '5'}>
+              <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Adjuntar CV</h3>
+            </div>
+            <div className="mt-4 bg-[#222] p-4 rounded-lg border border-dashed border-[#444] hover:border-[#666] transition-colors">
               <label className="flex items-center justify-between cursor-pointer">
-                <span className="flex items-center gap-2 text-sm text-gray-300">📎 Adjuntar CV (PDF, Word)</span>
+                <span className="flex items-center gap-2 text-sm text-gray-300"><Paperclip className="w-4 h-4" /> Adjuntar CV (PDF, Word)</span>
                 <span className="text-xs text-[#E6CA65]">{form.cv ? form.cv.nombre : 'Seleccionar archivo'}</span>
                 <input type="file" onChange={handleCvUpload} accept=".pdf,.doc,.docx" className="hidden" />
               </label>
             </div>
           </div>
 
+          {submitError && (
+            <div className="bg-red-500/10 border border-red-500/30 rounded-lg p-3 mb-4 flex items-center gap-2 text-red-400 text-sm">
+              <AlertCircle className="w-4 h-4 flex-shrink-0" />
+              {submitError}
+            </div>
+          )}
+
           <button type="submit" disabled={uploading}
-            className="w-full bg-[#E6CA65] text-black font-bold py-4 rounded-lg hover:bg-[#d8bd58] transition text-lg disabled:opacity-50">
-            {uploading ? 'Enviando...' : 'Enviar Postulación'}
+            className="w-full bg-[#E6CA65] text-black font-bold py-4 rounded-lg hover:bg-[#d8bd58] transition-all duration-200 text-lg disabled:opacity-50 shadow-lg shadow-[#E6CA65]/10 hover:shadow-[#E6CA65]/20">
+            {uploading ? (
+              <span className="flex items-center justify-center gap-2">
+                <svg className="animate-spin w-5 h-5" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" /></svg>
+                Enviando...
+              </span>
+            ) : 'Enviar Postulación'}
           </button>
         </form>
       )}
