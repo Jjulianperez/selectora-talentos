@@ -262,14 +262,6 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
               <div><label className="form-label">Localidad</label><input type="text" value={form.localidad} onChange={e => setForm({ ...form, localidad: e.target.value })} className={inputClass} /></div>
               <div><label className="form-label">Provincia</label><input type="text" value={form.provincia} onChange={e => setForm({ ...form, provincia: e.target.value })} className={inputClass} /></div>
               <div><label className="form-label">LinkedIn (Opcional)</label><input type="text" value={form.linkedin} onChange={e => setForm({ ...form, linkedin: e.target.value })} className={inputClass} /></div>
-              <div>
-                <label className="form-label">Sector</label>
-                <select value={form.sector} onChange={e => setForm({ ...form, sector: e.target.value })} className={inputClass}>
-                  <option value="">Seleccionar...</option>
-                  <option value="Público">Público</option>
-                  <option value="Privado">Privado</option>
-                </select>
-              </div>
             </div>
           </div>
 
@@ -299,6 +291,14 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
               </div>
               <div><label className="form-label">Título o Especialidad</label><input type="text" value={form.titulo} onChange={e => setForm({ ...form, titulo: e.target.value })} className={inputClass} /></div>
               <div><label className="form-label">Cargo en último empleo</label><input type="text" value={form.ultimoCargo} onChange={e => setForm({ ...form, ultimoCargo: e.target.value })} className={inputClass} /></div>
+              <div>
+                <label className="form-label">Sector</label>
+                <select value={form.sector} onChange={e => setForm({ ...form, sector: e.target.value })} className={inputClass}>
+                  <option value="">Seleccionar...</option>
+                  <option value="Público">Público</option>
+                  <option value="Privado">Privado</option>
+                </select>
+              </div>
               <div><label className="form-label">Última Empresa</label><input type="text" value={form.ultimaEmpresa} onChange={e => setForm({ ...form, ultimaEmpresa: e.target.value })} className={inputClass} /></div>
             </div>
           </div>
