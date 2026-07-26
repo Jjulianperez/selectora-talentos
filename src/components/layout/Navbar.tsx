@@ -40,7 +40,7 @@ export default function Navbar({ activeTab, onTabChange }: Props) {
       </nav>
 
       {/* Desktop: sticky top bar */}
-      <nav className="hidden md:block bg-[#161616] border-t border-[#2A2A2A] sticky top-[52px] z-30">
+      <nav className="hidden md:block bg-[#161616] border-t border-[#2A2A2A] sticky top-[80px] z-30">
         <div className="w-full px-2 sm:px-4 flex gap-0.5 overflow-x-auto scrollbar-hide">
           {tabs.map(t => (
             <button

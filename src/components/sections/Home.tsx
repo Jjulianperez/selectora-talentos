@@ -5,6 +5,8 @@ interface Props {
   onNavigate: (tab: TabId) => void;
 }
 
+const WA_NUMBER = '5492657234459';
+
 const servicios = [
   { titulo: "Reclutamiento y Selección", desc: "Captamos y evaluamos perfiles estratégicos para impulsar el crecimiento de tu organización. Acompañamos todo el proceso desde la publicación de la búsqueda hasta la incorporación del candidato ideal.", icon: <Users className="w-8 h-8" />, color: "text-cyan-400", bg: "bg-cyan-900/10" },
   { titulo: "Contrataciones Eventuales", desc: "Brindamos soluciones de personal ágiles y flexibles para cubrir necesidades temporales o proyectos específicos. Nosotros asumimos el compromiso de gestión y los colaboradores se contratan a través de la consultora, garantizando el cumplimiento de todas las obligaciones.", icon: <Handshake className="w-8 h-8" />, color: "text-emerald-400", bg: "bg-emerald-900/10" },
@@ -14,12 +16,15 @@ const servicios = [
   { titulo: "Onboarding e Integración", desc: "Acompañamos la adaptación de nuevos colaboradores para asegurar su retención y productividad. Diseñamos planes de incorporación que facilitan la incorporación del nuevo talento a la cultura organizacional.", icon: <Target className="w-8 h-8" />, color: "text-pink-400", bg: "bg-pink-900/10" },
 ];
 
+const waLink = (servicio: string) =>
+  `https://wa.me/${WA_NUMBER}?text=${encodeURIComponent(`Hola, quisiera recibir más información sobre el servicio de ${servicio}.`)}`;
+
 export default function Home({ onNavigate }: Props) {
   return (
     <div className="space-y-16">
       <div className="relative text-center py-12 sm:py-16 overflow-hidden bg-[#161616]">
         <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-[#E6CA65] opacity-5 blur-[120px] rounded-full pointer-events-none"></div>
-        <div className="relative z-10">
+        <div className="relative z-10 px-4">
           <span className="inline-block px-4 py-1 mb-6 text-xs font-semibold tracking-widest text-[#fcf6ba] uppercase border border-[#E6CA65]/30 rounded-full bg-[#E6CA65]/5">Consultora de Recursos Humanos</span>
           <h2 className="text-3xl sm:text-4xl md:text-5xl font-extrabold mb-6 bg-gradient-to-r from-[#bf953f] via-[#fcf6ba] to-[#bf953f] bg-clip-text text-transparent">Transformamos el talento en resultados</h2>
           <p className="text-gray-300 max-w-3xl mx-auto text-base sm:text-lg leading-relaxed font-light">
@@ -29,21 +34,21 @@ export default function Home({ onNavigate }: Props) {
       </div>
 
       <div>
-        <h3 className="text-2xl font-bold text-white mb-10 text-center tracking-wide">Nuestros Servicios</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+        <h3 className="text-2xl sm:text-3xl font-bold text-white mb-10 text-center tracking-wide">Nuestros Servicios</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {servicios.map((s, i) => (
-            <div key={i} className="service-card bg-gradient-to-b from-[#1A1A1A] to-[#121212] border border-[#2A2A2A] p-8 sm:p-10 rounded-2xl flex flex-col items-center text-center gap-4 shadow-xl relative overflow-hidden group">
+            <div key={i} className="service-card bg-gradient-to-b from-[#1A1A1A] to-[#121212] border border-[#2A2A2A] p-8 sm:p-10 rounded-2xl flex flex-col items-center text-center gap-5 shadow-xl relative overflow-hidden group">
               <div className="absolute inset-0 bg-[#E6CA65] opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none"></div>
               <div className="relative z-10 animate-float">
-                <div className={`w-18 h-18 sm:w-20 sm:h-20 flex items-center justify-center rounded-full ${s.bg} border border-[#333]`}>
+                <div className={`w-20 h-20 sm:w-24 sm:h-24 flex items-center justify-center rounded-full ${s.bg} border border-[#333]`}>
                   <span className={s.color}>{s.icon}</span>
                 </div>
               </div>
-              <h4 className="relative z-10 font-bold text-xl sm:text-2xl shimmer-text">{s.titulo}</h4>
-              <p className="relative z-10 text-sm sm:text-base text-gray-400 leading-relaxed">{s.desc}</p>
-              <a href="https://wa.me/5492657234459" target="_blank" rel="noopener noreferrer"
-                className="relative z-10 mt-2 text-xs text-green-400 flex items-center gap-1.5 hover:underline border border-green-900/50 px-4 py-2 rounded-full bg-green-900/10 hover:bg-green-900/20 transition-colors">
-                <MessageCircle className="w-3.5 h-3.5" /> Solicita más información
+              <h4 className="relative z-10 font-bold text-xl sm:text-2xl lg:text-[1.65rem] shimmer-text leading-tight">{s.titulo}</h4>
+              <p className="relative z-10 text-base sm:text-lg text-gray-400 leading-relaxed">{s.desc}</p>
+              <a href={waLink(s.titulo)} target="_blank" rel="noopener noreferrer"
+                className="relative z-10 mt-2 text-sm sm:text-base text-green-400 flex items-center gap-2 hover:underline border border-green-900/50 px-5 py-2.5 rounded-full bg-green-900/10 hover:bg-green-900/20 transition-colors font-medium">
+                <MessageCircle className="w-4 h-4" /> Solicita más información
               </a>
             </div>
           ))}
