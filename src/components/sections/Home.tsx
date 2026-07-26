@@ -6,12 +6,12 @@ interface Props {
 }
 
 const servicios = [
-  { titulo: "Reclutamiento y Selección", desc: "Captamos y evaluamos perfiles estratégicos para impulsar el crecimiento de tu organización.", icon: <Users className="w-7 h-7" />, color: "text-cyan-400", bg: "bg-cyan-900/10" },
-  { titulo: "Contrataciones Eventuales", desc: "Soluciones de personal ágiles y flexibles para cubrir necesidades temporales o proyectos específicos.", icon: <Handshake className="w-7 h-7" />, color: "text-emerald-400", bg: "bg-emerald-900/10" },
-  { titulo: "Capacitación y Desarrollo", desc: "Programas diseñados para potenciar competencias y maximizar el potencial de tus equipos.", icon: <BookOpen className="w-7 h-7" />, color: "text-purple-400", bg: "bg-purple-900/10" },
-  { titulo: "Mediación y Resolución de Conflictos", desc: "Gestión profesional de incidencias laborales para fomentar un clima organizacional armónico.", icon: <Scale className="w-7 h-7" />, color: "text-orange-400", bg: "bg-orange-900/10" },
-  { titulo: "Evaluación de Desempeño y Clima", desc: "Diagnósticos precisos sobre el ambiente de trabajo y el rendimiento para tomar decisiones estratégicas.", icon: <TrendingUp className="w-7 h-7" />, color: "text-blue-400", bg: "bg-blue-900/10" },
-  { titulo: "Onboarding e Integración", desc: "Acompañamos la adaptación de nuevos colaboradores para asegurar su retención y productividad.", icon: <Target className="w-7 h-7" />, color: "text-pink-400", bg: "bg-pink-900/10" },
+  { titulo: "Reclutamiento y Selección", desc: "Captamos y evaluamos perfiles estratégicos para impulsar el crecimiento de tu organización. Acompañamos todo el proceso desde la publicación de la búsqueda hasta la incorporación del candidato ideal.", icon: <Users className="w-8 h-8" />, color: "text-cyan-400", bg: "bg-cyan-900/10" },
+  { titulo: "Contrataciones Eventuales", desc: "Brindamos soluciones de personal ágiles y flexibles para cubrir necesidades temporales o proyectos específicos. Nosotros asumimos el compromiso de gestión y los colaboradores se contratan a través de la consultora, garantizando el cumplimiento de todas las obligaciones.", icon: <Handshake className="w-8 h-8" />, color: "text-emerald-400", bg: "bg-emerald-900/10" },
+  { titulo: "Capacitación y Desarrollo", desc: "Programas diseñados para potenciar competencias y maximizar el potencial de tus equipos. Desarrollamos capacitaciones a medida que se alinean con los objetivos estratégicos de tu empresa.", icon: <BookOpen className="w-8 h-8" />, color: "text-purple-400", bg: "bg-purple-900/10" },
+  { titulo: "Mediación y Resolución de Conflictos", desc: "Gestión profesional de incidencias laborales para fomentar un clima organizacional armónico. Intervenimos de forma imparcial para alcanzar acuerdos beneficiosos para todas las partes.", icon: <Scale className="w-8 h-8" />, color: "text-orange-400", bg: "bg-orange-900/10" },
+  { titulo: "Evaluación de Desempeño y Clima", desc: "Diagnósticos precisos sobre el ambiente de trabajo y el rendimiento para tomar decisiones estratégicas. Implementamos encuestas, entrevistas y análisis para medir y mejorar el clima laboral.", icon: <TrendingUp className="w-8 h-8" />, color: "text-blue-400", bg: "bg-blue-900/10" },
+  { titulo: "Onboarding e Integración", desc: "Acompañamos la adaptación de nuevos colaboradores para asegurar su retención y productividad. Diseñamos planes de incorporación que facilitan la incorporación del nuevo talento a la cultura organizacional.", icon: <Target className="w-8 h-8" />, color: "text-pink-400", bg: "bg-pink-900/10" },
 ];
 
 export default function Home({ onNavigate }: Props) {
@@ -32,15 +32,15 @@ export default function Home({ onNavigate }: Props) {
         <h3 className="text-2xl font-bold text-white mb-10 text-center tracking-wide">Nuestros Servicios</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {servicios.map((s, i) => (
-            <div key={i} className="service-card bg-gradient-to-b from-[#1A1A1A] to-[#121212] border border-[#2A2A2A] p-8 rounded-2xl flex flex-col items-center text-center gap-4 shadow-xl relative overflow-hidden group">
+            <div key={i} className="service-card bg-gradient-to-b from-[#1A1A1A] to-[#121212] border border-[#2A2A2A] p-8 sm:p-10 rounded-2xl flex flex-col items-center text-center gap-4 shadow-xl relative overflow-hidden group">
               <div className="absolute inset-0 bg-[#E6CA65] opacity-0 group-hover:opacity-5 transition-opacity duration-300 pointer-events-none"></div>
               <div className="relative z-10 animate-float">
-                <div className={`w-16 h-16 flex items-center justify-center rounded-full ${s.bg} border border-[#333]`}>
+                <div className={`w-18 h-18 sm:w-20 sm:h-20 flex items-center justify-center rounded-full ${s.bg} border border-[#333]`}>
                   <span className={s.color}>{s.icon}</span>
                 </div>
               </div>
-              <h4 className="relative z-10 font-bold text-xl shimmer-text">{s.titulo}</h4>
-              <p className="relative z-10 text-sm text-gray-400 leading-relaxed">{s.desc}</p>
+              <h4 className="relative z-10 font-bold text-xl sm:text-2xl shimmer-text">{s.titulo}</h4>
+              <p className="relative z-10 text-sm sm:text-base text-gray-400 leading-relaxed">{s.desc}</p>
               <a href="https://wa.me/5492657234459" target="_blank" rel="noopener noreferrer"
                 className="relative z-10 mt-2 text-xs text-green-400 flex items-center gap-1.5 hover:underline border border-green-900/50 px-4 py-2 rounded-full bg-green-900/10 hover:bg-green-900/20 transition-colors">
                 <MessageCircle className="w-3.5 h-3.5" /> Solicita más información
