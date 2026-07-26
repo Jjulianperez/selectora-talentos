@@ -17,7 +17,7 @@ export default function Header({ isAdmin = false, candidatosCount = 0 }: Props) 
           </div>
         </div>
 
-        <div className="hidden lg:flex items-center gap-5 text-xs text-gray-400">
+        <div className="hidden md:flex items-center gap-5 text-xs text-gray-400">
           <a href="mailto:consultoracv.sanluis@gmail.com" className="flex items-center gap-1.5 hover:text-[#E6CA65] transition-colors">
             <Mail className="w-3.5 h-3.5 text-[#E6CA65]" /> consultoracv.sanluis@gmail.com
           </a>

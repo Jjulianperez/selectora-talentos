@@ -138,15 +138,17 @@ export default function App() {
         </div>
       </main>
 
-      <a
-        href="https://wa.me/5492657234459?text=Hola%2C%20quisiera%20m%C3%A1s%20informaci%C3%B3n"
-        target="_blank"
-        rel="noopener noreferrer"
-        className="fixed bottom-[72px] md:bottom-6 left-6 z-50 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg hover:bg-[#20ba5a] transition-colors wa-float"
-        aria-label="Contactar por WhatsApp"
-      >
-        <MessageCircle className="w-6 h-6 text-white" />
-      </a>
+      {activeTab !== 'inicio' && (
+        <a
+          href="https://wa.me/5492657234459?text=Hola%2C%20quisiera%20m%C3%A1s%20informaci%C3%B3n"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="fixed bottom-[72px] md:bottom-6 left-6 z-50 w-14 h-14 bg-[#25D366] rounded-full flex items-center justify-center shadow-lg hover:bg-[#20ba5a] transition-colors wa-float"
+          aria-label="Contactar por WhatsApp"
+        >
+          <MessageCircle className="w-6 h-6 text-white" />
+        </a>
+      )}
     </div>
   );
 }
