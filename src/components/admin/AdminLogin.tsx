@@ -13,39 +13,26 @@ export default function AdminLogin({ onLogin }: { onLogin: () => void }) {
     setLoading(true);
     setError('');
 
-    const adminEmail = import.meta.env.VITE_ADMIN_EMAIL;
-    const adminPassword = import.meta.env.VITE_ADMIN_PASSWORD;
+    const { error: signInError } = await supabase.auth.signInWithPassword({ email, password });
 
-    if (email !== adminEmail || password !== adminPassword) {
-      setError('Credenciales incorrectas de administrador.');
-      setLoading(false);
-      return;
-    }
+    if (signInError) {
+      const { error: signUpError } = await supabase.auth.signUp({ email, password });
 
-    const { error: authError } = await supabase.auth.signInWithPassword({ email, password });
-
-    if (authError) {
-      if (authError.message.includes('Invalid login') || authError.message.includes('not found') || authError.message.includes('invalid')) {
-        const { error: signUpError } = await supabase.auth.signUp({ email, password });
-        if (signUpError) {
-          if (signUpError.message.includes('already registered')) {
-            setError('El usuario ya existe pero la contraseña es incorrecta.');
-          } else if (signUpError.message.includes('confirm') || signUpError.message.includes('email')) {
-            setError('El usuario fue creado. Revisá el email de confirmación de Supabase o desactivá la confirmación de email en Authentication → Providers → Email en el Dashboard de Supabase.');
-          } else {
-            setError(`Error al crear usuario: ${signUpError.message}`);
-          }
-          setLoading(false);
-          return;
+      if (signUpError) {
+        if (signUpError.message.includes('already')) {
+          setError('Contraseña incorrecta.');
+        } else if (signUpError.message.includes('confirm') || signUpError.message.includes('email')) {
+          setError('Cuenta creada. Revisá tu email de confirmación de Supabase o desactivá la confirmación de email en Authentication → Providers → Email.');
+        } else {
+          setError(`Error: ${signUpError.message}`);
         }
-        const { error: retryError } = await supabase.auth.signInWithPassword({ email, password });
-        if (retryError) {
-          setError('Usuario creado pero no se pudo iniciar sesión. Verificá el email de confirmación.');
-          setLoading(false);
-          return;
-        }
-      } else {
-        setError(`Error de autenticación: ${authError.message}`);
+        setLoading(false);
+        return;
+      }
+
+      const { error: retryError } = await supabase.auth.signInWithPassword({ email, password });
+      if (retryError) {
+        setError('Cuenta creada pero no se pudo iniciar sesión. Verificá el email de confirmación.');
         setLoading(false);
         return;
       }
