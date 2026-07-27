@@ -133,7 +133,7 @@ export default function App() {
               }}
             />
           )}
-          {activeTab === 'novedades' && <News isAdmin={isAdminLoggedIn} />}
+          {activeTab === 'novedades' && <News />}
           {activeTab === 'tests' && <Tests />}
         </div>
       </main>
