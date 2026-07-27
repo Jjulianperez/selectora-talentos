@@ -58,25 +58,28 @@ export default function Tests() {
       const resultadoFinal = { test: testActivo!.titulo, score: `${score}/${maxScore}` };
 
       setGuardando(true);
-      const { data: rpcOk, error: rpcError } = await supabase.rpc('update_test_results', { p_email: emailTest.trim(), p_result: resultadoFinal });
+      const { error: insertError } = await supabase.from('test_scores').insert({
+        email: emailTest.trim(),
+        test: resultadoFinal.test,
+        score: resultadoFinal.score,
+      });
       setGuardando(false);
 
-      if (rpcError || !rpcOk) {
-        setResultadoTest(resultadoFinal);
-        setTestGuardado(false);
-      } else {
-        setResultadoTest(resultadoFinal);
-        setTestGuardado(true);
-      }
+      setResultadoTest(resultadoFinal);
+      setTestGuardado(!insertError);
     }
   };
 
   const reintentarGuardado = async () => {
     if (!resultadoTest) return;
     setGuardando(true);
-    const { data: rpcOk, error: rpcError } = await supabase.rpc('update_test_results', { p_email: emailTest.trim(), p_result: resultadoTest });
+    const { error } = await supabase.from('test_scores').insert({
+      email: emailTest.trim(),
+      test: resultadoTest.test,
+      score: resultadoTest.score,
+    });
     setGuardando(false);
-    if (!rpcError && rpcOk) setTestGuardado(true);
+    if (!error) setTestGuardado(true);
   };
 
   const cerrarTest = () => {

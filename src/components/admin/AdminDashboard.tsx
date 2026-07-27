@@ -16,6 +16,7 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [newsList, setNewsList] = useState<News[]>([]);
+  const [testScores, setTestScores] = useState<any[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(new Date().toLocaleTimeString());
   const [activeSection, setActiveSection] = useState<Section>('candidatos');
@@ -36,14 +37,16 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
 
   const loadData = async () => {
     setIsSyncing(true);
-    const [candRes, vacRes, newsRes] = await Promise.all([
+    const [candRes, vacRes, newsRes, scoresRes] = await Promise.all([
       supabase.from('candidates').select('*'),
       supabase.from('vacancies').select('*').order('created_at', { ascending: false }),
       supabase.from('news').select('*').order('created_at', { ascending: false }),
+      supabase.from('test_scores').select('*').order('created_at', { ascending: false }),
     ]);
     if (candRes.data) setCandidates(candRes.data);
     if (vacRes.data) setVacancies(vacRes.data);
     if (newsRes.data) setNewsList(newsRes.data);
+    if (scoresRes.data) setTestScores(scoresRes.data);
     setLastSyncTime(new Date().toLocaleTimeString());
     setIsSyncing(false);
   };
@@ -187,7 +190,7 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
         </div>
         <div className="bg-[#1A1A1A] p-4 rounded-xl border border-[#2A2A2A] text-center space-y-1">
           <span className="text-[10px] text-gray-400 font-bold uppercase">Tests Realizados</span>
-          <p className="text-3xl font-black text-purple-400">{candidates.reduce((acc, c) => acc + (c.test_results?.length || 0), 0)}</p>
+          <p className="text-3xl font-black text-purple-400">{testScores.length}</p>
         </div>
       </div>
 
@@ -325,7 +328,7 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
             <h3 className="text-lg font-bold text-gray-200">Tests y Resultados</h3>
             <div className="relative w-full sm:w-72">
-              <input type="text" placeholder="Buscar candidato..." value={testCandidateFilter} onChange={e => setTestCandidateFilter(e.target.value)} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm" />
+              <input type="text" placeholder="Buscar por email..." value={testCandidateFilter} onChange={e => setTestCandidateFilter(e.target.value)} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm" />
             </div>
           </div>
 
@@ -336,7 +339,7 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
                 <div key={t.id} className="bg-[#252525] border border-[#333] rounded-lg p-3">
                   <p className="font-semibold text-gray-200 text-sm">{t.titulo}</p>
                   <p className="text-xs text-gray-500">{t.preguntas.length} preguntas</p>
-                  <p className="text-xs text-gray-400 mt-1">{candidates.filter(c => c.test_results?.some((tr: any) => tr.test === t.titulo)).length} completado(s)</p>
+                  <p className="text-xs text-gray-400 mt-1">{testScores.filter(s => s.test === t.titulo).length} completado(s)</p>
                 </div>
               ))}
             </div>
@@ -344,34 +347,23 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
 
           <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl overflow-hidden">
             <div className="p-4 border-b border-[#2A2A2A]">
-              <h4 className="font-bold text-gray-200 text-sm">Candidatos y sus tests</h4>
+              <h4 className="font-bold text-gray-200 text-sm">Resultados de tests</h4>
             </div>
-            {filteredCandidates.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-sm">No se encontraron candidatos.</div>
+            {testScores.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 text-sm">No hay tests completados aún.</div>
             ) : (
               <div className="divide-y divide-[#2A2A2A]">
-                {filteredCandidates.map(c => (
-                  <div key={c.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-[#222] transition">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-200">{c.nombre}</p>
-                      <p className="text-xs text-gray-500">{c.email || 'Sin email'}</p>
-                      {c.test_results && c.test_results.length > 0 ? (
-                        <div className="flex flex-wrap gap-1.5 mt-1.5">
-                          {c.test_results.map((tr: any, i: number) => (
-                            <span key={i} className="text-[10px] bg-[#252525] border border-[#444] text-[#E6CA65] px-2 py-0.5 rounded-full">{tr.test}: {tr.score}</span>
-                          ))}
-                        </div>
-                      ) : (
-                        <p className="text-xs text-gray-600 mt-1">Sin tests realizados</p>
-                      )}
+                {testScores
+                  .filter(s => !testCandidateFilter || s.email.toLowerCase().includes(testCandidateFilter.toLowerCase()))
+                  .map(s => (
+                    <div key={s.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-[#222] transition">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-gray-200">{s.email}</p>
+                        <p className="text-xs text-gray-500">{new Date(s.created_at).toLocaleString('es-AR')}</p>
+                      </div>
+                      <span className="text-[10px] bg-[#252525] border border-[#444] text-[#E6CA65] px-2 py-0.5 rounded-full font-semibold">{s.test}: {s.score}</span>
                     </div>
-                    {c.email && (
-                      <button onClick={() => shareTestLink(c.email, c.nombre)} className="flex items-center gap-1.5 text-xs text-green-400 bg-green-900/20 border border-green-800/30 px-3 py-1.5 rounded-lg hover:bg-green-900/30 transition flex-shrink-0">
-                        <Send className="w-3 h-3" /> Enviar test
-                      </button>
-                    )}
-                  </div>
-                ))}
+                  ))}
               </div>
             )}
           </div>
