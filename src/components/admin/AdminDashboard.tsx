@@ -1,7 +1,8 @@
-﻿import { useState, useEffect } from 'react';
-import { Shield, FileSpreadsheet, RefreshCw, Plus, X, Pencil, Trash2, Briefcase, Save } from 'lucide-react';
-import { supabase } from '../../lib/supabase';
-import type { Candidate, Vacancy, News } from '../../lib/types';
+﻿import { useState, useEffect, useRef } from 'react';
+import { Shield, FileSpreadsheet, RefreshCw, Plus, X, Pencil, Trash2, Briefcase, Save, Newspaper, FlaskConical, Upload, FileText, ExternalLink, Send } from 'lucide-react';
+import { supabase, BUCKET_NAME } from '../../lib/supabase';
+import { testModules } from '../../data/tests';
+import type { Candidate, Vacancy, News, Attachment } from '../../lib/types';
 import CandidateTable from './CandidateTable';
 
 interface Props {
@@ -9,16 +10,27 @@ interface Props {
   onNotification: (msg: string) => void;
 }
 
+type Section = 'candidatos' | 'vacantes' | 'novedades' | 'tests';
+
 export default function AdminDashboard({ onLogout, onNotification }: Props) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
-  const [news, setNews] = useState<News[]>([]);
+  const [newsList, setNewsList] = useState<News[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(new Date().toLocaleTimeString());
-  const [activeSection, setActiveSection] = useState<'candidatos' | 'vacantes'>('candidatos');
+  const [activeSection, setActiveSection] = useState<Section>('candidatos');
+
   const [showVacancyForm, setShowVacancyForm] = useState(false);
   const [editingVacancy, setEditingVacancy] = useState<Vacancy | null>(null);
   const [vacForm, setVacForm] = useState({ titulo: '', estado: 'Urgente', descripcion: '' });
+
+  const [showNewsForm, setShowNewsForm] = useState(false);
+  const [editingNews, setEditingNews] = useState<News | null>(null);
+  const [newsForm, setNewsForm] = useState({ titulo: '', descripcion: '', url: '' });
+  const [newsAdjuntos, setNewsAdjuntos] = useState<Attachment[]>([]);
+  const [uploadingNews, setUploadingNews] = useState(false);
+
+  const [testCandidateFilter, setTestCandidateFilter] = useState('');
 
   useEffect(() => { loadData(); }, []);
 
@@ -27,21 +39,21 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
     const [candRes, vacRes, newsRes] = await Promise.all([
       supabase.from('candidates').select('*'),
       supabase.from('vacancies').select('*').order('created_at', { ascending: false }),
-      supabase.from('news').select('*'),
+      supabase.from('news').select('*').order('created_at', { ascending: false }),
     ]);
     if (candRes.data) setCandidates(candRes.data);
     if (vacRes.data) setVacancies(vacRes.data);
-    if (newsRes.data) setNews(newsRes.data);
+    if (newsRes.data) setNewsList(newsRes.data);
     setLastSyncTime(new Date().toLocaleTimeString());
     setIsSyncing(false);
   };
 
   const exportCSV = () => {
-    const headers = ["FECHA", "NOMBRE", "DNI", "EMAIL", "PUESTO", "ÁREAS", "HABILIDADES", "TESTS", "OBS. ADMIN"];
+    const headers = ["FECHA", "NOMBRE", "DNI", "EMAIL", "SECTOR", "PUESTO", "ÁREAS", "HABILIDADES", "TESTS", "OBS. ADMIN"];
     let csv = "\uFEFF" + headers.join(";") + "\r\n";
     candidates.forEach(c => {
       const row = [
-        `"${c.fecha}"`, `"${c.nombre}"`, `"${c.dni || ''}"`, `"${c.email || ''}"`, `"${c.puesto || ''}"`,
+        `"${c.fecha}"`, `"${c.nombre}"`, `"${c.dni || ''}"`, `"${c.email || ''}"`, `"${c.sector || ''}"`, `"${c.puesto || ''}"`,
         `"${(c.areas_exp || []).join(', ')} ${c.areas_exp_otros ? '(' + c.areas_exp_otros + ')' : ''}"`,
         `"${(c.habilidades || []).join(', ')} ${c.habilidades_otros ? '(' + c.habilidades_otros + ')' : ''}"`,
         `"${(c.test_results || []).map((t: any) => t.test + ': ' + t.score).join(' | ')}"`,
@@ -60,14 +72,14 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
     if (!vacForm.titulo.trim()) return;
     if (editingVacancy) {
       const { error } = await supabase.from('vacancies').update({ titulo: vacForm.titulo, estado: vacForm.estado, descripcion: vacForm.descripcion }).eq('id', editingVacancy.id);
-      if (!error) {
-        onNotification(`Vacante actualizada: ${vacForm.titulo}`);
-        setEditingVacancy(null);
-      }
+      if (error) { alert('Error: ' + error.message); return; }
+      onNotification(`Vacante actualizada: ${vacForm.titulo}`);
+      setEditingVacancy(null);
     } else {
       const id = 'VAC-' + Date.now();
-      const { error } = await supabase.from('vacancies').insert({ id, ...vacForm });
-      if (!error) onNotification(`Vacante creada: ${vacForm.titulo}`);
+      const { error } = await supabase.from('vacancies').insert({ id, titulo: vacForm.titulo, estado: vacForm.estado, descripcion: vacForm.descripcion, adjuntos: [] });
+      if (error) { alert('Error: ' + error.message); return; }
+      onNotification(`Vacante creada: ${vacForm.titulo}`);
     }
     setVacForm({ titulo: '', estado: 'Urgente', descripcion: '' });
     setShowVacancyForm(false);
@@ -81,29 +93,80 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
     loadData();
   };
 
-  const startEditVacancy = (v: Vacancy) => {
-    setEditingVacancy(v);
-    setVacForm({ titulo: v.titulo, estado: v.estado, descripcion: v.descripcion });
-    setShowVacancyForm(true);
+  const handleNewsUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setUploadingNews(true);
+    const nuevos: Attachment[] = [];
+    for (const f of files) {
+      const filePath = `attachments/${Date.now()}_${f.name}`;
+      const { data } = await supabase.storage.from(BUCKET_NAME).upload(filePath, f);
+      if (data) {
+        const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(data.path);
+        nuevos.push({ nombre: f.name, tipo: f.type.includes('image') ? 'foto' : f.type.includes('video') ? 'video' : 'documento', url: urlData.publicUrl });
+      }
+    }
+    setNewsAdjuntos(prev => [...prev, ...nuevos]);
+    setUploadingNews(false);
   };
 
+  const handleSaveNews = async () => {
+    if (!newsForm.titulo.trim()) return;
+    const payload = { titulo: newsForm.titulo, descripcion: newsForm.descripcion, url: newsForm.url, adjuntos: newsAdjuntos, fecha: new Date().toLocaleDateString('es-AR') };
+    if (editingNews) {
+      const { error } = await supabase.from('news').update(payload).eq('id', editingNews.id);
+      if (error) { alert('Error: ' + error.message); return; }
+      onNotification(`Novedad actualizada: ${newsForm.titulo}`);
+      setEditingNews(null);
+    } else {
+      const { error } = await supabase.from('news').insert({ id: 'NEWS-' + Date.now(), ...payload });
+      if (error) { alert('Error: ' + error.message); return; }
+      onNotification(`Novedad creada: ${newsForm.titulo}`);
+    }
+    setNewsForm({ titulo: '', descripcion: '', url: '' });
+    setNewsAdjuntos([]);
+    setShowNewsForm(false);
+    loadData();
+  };
+
+  const handleDeleteNews = async (id: string) => {
+    if (!confirm('¿Eliminar esta novedad?')) return;
+    await supabase.from('news').delete().eq('id', id);
+    onNotification('Novedad eliminada');
+    loadData();
+  };
+
+  const shareTestLink = (candidateEmail: string, candidateName: string) => {
+    const msg = `Hola ${candidateName}, te invitamos a completar una evaluación psicotécnica de CV Consultora. Ingresá con tu email "${candidateEmail}" en la sección de Tests de nuestra página: ${window.location.origin}`;
+    window.open(`https://wa.me/5492657234459?text=${encodeURIComponent(msg)}`, '_blank');
+  };
+
+  const sections: { id: Section; label: string; icon: React.ReactNode }[] = [
+    { id: 'candidatos', label: 'Candidatos', icon: <Shield className="w-4 h-4" /> },
+    { id: 'vacantes', label: 'Vacantes', icon: <Briefcase className="w-4 h-4" /> },
+    { id: 'novedades', label: 'Novedades', icon: <Newspaper className="w-4 h-4" /> },
+    { id: 'tests', label: 'Tests', icon: <FlaskConical className="w-4 h-4" /> },
+  ];
+
+  const filteredCandidates = testCandidateFilter
+    ? candidates.filter(c => c.nombre.toLowerCase().includes(testCandidateFilter.toLowerCase()) || c.email?.toLowerCase().includes(testCandidateFilter.toLowerCase()))
+    : candidates;
+
   return (
-    <div className="space-y-8">
+    <div className="space-y-6">
       <div className="border-b border-[#2A2A2A] pb-4 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
           <h2 className="text-3xl font-black text-[#E6CA65] uppercase tracking-tight flex items-center gap-2">
-            <Shield className="w-8 h-8" />
-            Portal de Administración
+            <Shield className="w-8 h-8" /> Portal de Administración
           </h2>
-          <p className="text-gray-400 mt-1">Gestión avanzada de base de datos, observaciones y reportes.</p>
+          <p className="text-gray-400 mt-1">Gestión de candidatos, vacantes, novedades y tests.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 bg-[#1A1A1A] px-3.5 py-2 rounded-xl border border-[#2A2A2A] text-xs shadow-inner">
             <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
-            <span className="text-gray-200 font-bold">Supabase Activo</span>
+            <span className="text-gray-200 font-bold">Online</span>
             {isSyncing ? <RefreshCw className="w-3.5 h-3.5 text-emerald-400 animate-spin" /> : <span className="text-gray-500 text-[10px]">({lastSyncTime})</span>}
           </div>
-          <button onClick={exportCSV} className="flex items-center gap-2 bg-[#1A1A1A] text-[#E6CA65] border border-[#E6CA65]/40 hover:bg-[#2A2A2A] px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap"><FileSpreadsheet className="w-4 h-4" /> Exportar Excel</button>
+          <button onClick={exportCSV} className="flex items-center gap-2 bg-[#1A1A1A] text-[#E6CA65] border border-[#E6CA65]/40 hover:bg-[#2A2A2A] px-4 py-2 rounded-lg text-xs font-semibold whitespace-nowrap"><FileSpreadsheet className="w-4 h-4" /> Exportar</button>
           <button onClick={loadData} className="flex items-center gap-2 bg-[#1A1A1A] text-gray-300 border border-[#2A2A2A] hover:bg-[#2A2A2A] px-4 py-2 rounded-lg text-xs font-semibold"><RefreshCw className={`w-3.5 h-3.5 ${isSyncing ? 'animate-spin' : ''}`} /> Actualizar</button>
           <button onClick={onLogout} className="px-4 py-2 bg-[#1A1A1A] hover:bg-[#2A2A2A] text-gray-300 rounded-lg text-xs font-bold border border-[#2A2A2A] transition">Cerrar Sesión</button>
         </div>
@@ -111,77 +174,62 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-[#1A1A1A] p-4 rounded-xl border border-[#2A2A2A] text-center space-y-1">
-          <span className="text-[10px] text-gray-400 font-bold uppercase">Candidatos Totales</span>
+          <span className="text-[10px] text-gray-400 font-bold uppercase">Candidatos</span>
           <p className="text-3xl font-black text-[#E6CA65]">{candidates.length}</p>
         </div>
         <div className="bg-[#1A1A1A] p-4 rounded-xl border border-[#2A2A2A] text-center space-y-1">
-          <span className="text-[10px] text-gray-400 font-bold uppercase">Vacantes Activas</span>
+          <span className="text-[10px] text-gray-400 font-bold uppercase">Vacantes</span>
           <p className="text-3xl font-black text-blue-400">{vacancies.length}</p>
         </div>
         <div className="bg-[#1A1A1A] p-4 rounded-xl border border-[#2A2A2A] text-center space-y-1">
           <span className="text-[10px] text-gray-400 font-bold uppercase">Novedades</span>
-          <p className="text-3xl font-black text-emerald-400">{news.length}</p>
+          <p className="text-3xl font-black text-emerald-400">{newsList.length}</p>
         </div>
         <div className="bg-[#1A1A1A] p-4 rounded-xl border border-[#2A2A2A] text-center space-y-1">
-          <span className="text-[10px] text-gray-400 font-bold uppercase">Base de Datos</span>
-          <p className="text-xs text-emerald-400 font-bold uppercase mt-2">Supabase en línea</p>
+          <span className="text-[10px] text-gray-400 font-bold uppercase">Tests Realizados</span>
+          <p className="text-3xl font-black text-purple-400">{candidates.reduce((acc, c) => acc + (c.test_results?.length || 0), 0)}</p>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-[#2A2A2A]">
-        <button onClick={() => setActiveSection('candidatos')} className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all ${activeSection === 'candidatos' ? 'text-[#E6CA65] border-b-2 border-[#E6CA65]' : 'text-gray-400 hover:text-gray-200'}`}>
-          <Shield className="w-4 h-4" /> Candidatos
-        </button>
-        <button onClick={() => setActiveSection('vacantes')} className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all ${activeSection === 'vacantes' ? 'text-[#E6CA65] border-b-2 border-[#E6CA65]' : 'text-gray-400 hover:text-gray-200'}`}>
-          <Briefcase className="w-4 h-4" /> Vacantes
-        </button>
+      <div className="flex gap-1 border-b border-[#2A2A2A] overflow-x-auto scrollbar-hide">
+        {sections.map(s => (
+          <button key={s.id} onClick={() => setActiveSection(s.id)} className={`flex items-center gap-2 px-5 py-3 text-sm font-semibold transition-all whitespace-nowrap ${activeSection === s.id ? 'text-[#E6CA65] border-b-2 border-[#E6CA65]' : 'text-gray-400 hover:text-gray-200'}`}>
+            {s.icon} {s.label}
+          </button>
+        ))}
       </div>
 
-      {activeSection === 'candidatos' && (
-        <CandidateTable candidates={candidates} onUpdate={setCandidates} />
-      )}
+      {activeSection === 'candidatos' && <CandidateTable candidates={candidates} onUpdate={setCandidates} />}
 
       {activeSection === 'vacantes' && (
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-gray-200">Vacantes publicadas</h3>
-            <button onClick={() => { setEditingVacancy(null); setVacForm({ titulo: '', estado: 'Urgente', descripcion: '' }); setShowVacancyForm(true); }}
-              className="flex items-center gap-2 bg-[#E6CA65] text-black px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#d8bd58] transition">
+            <button onClick={() => { setEditingVacancy(null); setVacForm({ titulo: '', estado: 'Urgente', descripcion: '' }); setShowVacancyForm(true); }} className="flex items-center gap-2 bg-[#E6CA65] text-black px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#d8bd58] transition">
               <Plus className="w-4 h-4" /> Nueva Vacante
             </button>
           </div>
-
           {showVacancyForm && (
             <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
               <div className="flex items-center justify-between">
                 <h4 className="font-bold text-[#E6CA65]">{editingVacancy ? 'Editar Vacante' : 'Nueva Vacante'}</h4>
                 <button onClick={() => { setShowVacancyForm(false); setEditingVacancy(null); }} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
               </div>
-              <input type="text" placeholder="Título de la vacante" value={vacForm.titulo} onChange={e => setVacForm({ ...vacForm, titulo: e.target.value })}
-                className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm" />
-              <select value={vacForm.estado} onChange={e => setVacForm({ ...vacForm, estado: e.target.value })}
-                className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm">
+              <input type="text" placeholder="Título de la vacante" value={vacForm.titulo} onChange={e => setVacForm({ ...vacForm, titulo: e.target.value })} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm" />
+              <select value={vacForm.estado} onChange={e => setVacForm({ ...vacForm, estado: e.target.value })} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm">
                 <option>Urgente</option><option>Abierta</option><option>Cerrada</option>
               </select>
-              <textarea placeholder="Descripción (opcional)" value={vacForm.descripcion} onChange={e => setVacForm({ ...vacForm, descripcion: e.target.value })} rows={3}
-                className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm resize-none" />
+              <textarea placeholder="Descripción del puesto y requisitos" value={vacForm.descripcion} onChange={e => setVacForm({ ...vacForm, descripcion: e.target.value })} rows={3} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm resize-none" />
               <div className="flex gap-3">
-                <button onClick={handleSaveVacancy} className="flex items-center gap-2 bg-[#E6CA65] text-black px-5 py-2 rounded-lg text-xs font-bold hover:bg-[#d8bd58] transition">
-                  <Save className="w-4 h-4" /> {editingVacancy ? 'Actualizar' : 'Crear'}
-                </button>
-                <button onClick={() => { setShowVacancyForm(false); setEditingVacancy(null); }} className="px-5 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-white border border-[#333] transition">
-                  Cancelar
-                </button>
+                <button onClick={handleSaveVacancy} className="flex items-center gap-2 bg-[#E6CA65] text-black px-5 py-2 rounded-lg text-xs font-bold hover:bg-[#d8bd58] transition"><Save className="w-4 h-4" /> {editingVacancy ? 'Actualizar' : 'Crear'}</button>
+                <button onClick={() => { setShowVacancyForm(false); setEditingVacancy(null); }} className="px-5 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-white border border-[#333] transition">Cancelar</button>
               </div>
             </div>
           )}
-
           {vacancies.length === 0 ? (
             <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-8 text-center">
               <Briefcase className="w-10 h-10 text-gray-600 mx-auto mb-3" />
               <p className="text-gray-400">No hay vacantes publicadas.</p>
-              <p className="text-gray-500 text-xs mt-1">Creá una para que los postulantes puedan aplicar.</p>
             </div>
           ) : (
             <div className="space-y-2">
@@ -189,20 +237,144 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
                 <div key={v.id} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 flex items-center justify-between gap-4 hover:border-[#444] transition">
                   <div className="flex-1 min-w-0">
                     <p className="font-semibold text-gray-200 truncate">{v.titulo}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${
-                        v.estado === 'Urgente' ? 'bg-red-500/20 text-red-400' : v.estado === 'Abierta' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'
-                      }`}>{v.estado}</span>
-                    </p>
+                    <p className="text-xs text-gray-500 mt-0.5"><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${v.estado === 'Urgente' ? 'bg-red-500/20 text-red-400' : v.estado === 'Abierta' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>{v.estado}</span></p>
                   </div>
                   <div className="flex items-center gap-2">
-                    <button onClick={() => startEditVacancy(v)} className="p-2 text-gray-400 hover:text-[#E6CA65] transition"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => { setEditingVacancy(v); setVacForm({ titulo: v.titulo, estado: v.estado, descripcion: v.descripcion }); setShowVacancyForm(true); }} className="p-2 text-gray-400 hover:text-[#E6CA65] transition"><Pencil className="w-4 h-4" /></button>
                     <button onClick={() => handleDeleteVacancy(v.id)} className="p-2 text-gray-400 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
                   </div>
                 </div>
               ))}
             </div>
           )}
+        </div>
+      )}
+
+      {activeSection === 'novedades' && (
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="text-lg font-bold text-gray-200">Novedades</h3>
+            <button onClick={() => { setEditingNews(null); setNewsForm({ titulo: '', descripcion: '', url: '' }); setNewsAdjuntos([]); setShowNewsForm(true); }} className="flex items-center gap-2 bg-[#E6CA65] text-black px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#d8bd58] transition">
+              <Plus className="w-4 h-4" /> Nueva Novedad
+            </button>
+          </div>
+          {showNewsForm && (
+            <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5 space-y-4">
+              <div className="flex items-center justify-between">
+                <h4 className="font-bold text-[#E6CA65]">{editingNews ? 'Editar Novedad' : 'Nueva Novedad'}</h4>
+                <button onClick={() => { setShowNewsForm(false); setEditingNews(null); }} className="text-gray-400 hover:text-white"><X className="w-5 h-5" /></button>
+              </div>
+              <input type="text" placeholder="Título de la novedad" value={newsForm.titulo} onChange={e => setNewsForm({ ...newsForm, titulo: e.target.value })} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm" />
+              <textarea placeholder="Descripción" value={newsForm.descripcion} onChange={e => setNewsForm({ ...newsForm, descripcion: e.target.value })} rows={3} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm resize-none" />
+              <input type="url" placeholder="URL de referencia (opcional)" value={newsForm.url} onChange={e => setNewsForm({ ...newsForm, url: e.target.value })} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm" />
+              <div>
+                <label className="form-label">Adjuntar archivos (imágenes, videos, documentos)</label>
+                <div className="flex items-center gap-4 border border-dashed border-[#444] p-4 rounded-lg bg-[#222]">
+                  <label className="flex items-center gap-2 bg-[#2D2D2D] border border-[#555] text-gray-300 px-4 py-2 rounded-lg cursor-pointer hover:bg-[#383838] transition text-sm">
+                    <Upload className="w-4 h-4" /> Seleccionar
+                    <input type="file" multiple onChange={handleNewsUpload} className="hidden" accept="image/*,video/*,.pdf,.doc,.docx" />
+                  </label>
+                  <span className="text-xs text-gray-500">{newsAdjuntos.length} archivo(s) {uploadingNews && '— subiendo...'}</span>
+                </div>
+                {newsAdjuntos.length > 0 && (
+                  <div className="mt-3 grid grid-cols-4 gap-2">
+                    {newsAdjuntos.map((adj, i) => (
+                      <div key={i} className="relative bg-[#252525] border border-[#333] rounded-lg p-2 text-center">
+                        {adj.tipo === 'foto' && <img src={adj.url} alt={adj.nombre} className="w-full h-16 object-cover rounded" />}
+                        {adj.tipo === 'video' && <div className="w-full h-16 bg-[#1A1A1A] rounded flex items-center justify-center"><span className="text-xs text-gray-400">Video</span></div>}
+                        {adj.tipo === 'documento' && <FileText className="w-6 h-6 text-[#E6CA65] mx-auto mt-3" />}
+                        <p className="text-[9px] text-gray-500 truncate mt-1">{adj.nombre}</p>
+                        <button onClick={() => setNewsAdjuntos(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 text-red-400 hover:text-red-300"><X className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+              <div className="flex gap-3">
+                <button onClick={handleSaveNews} className="flex items-center gap-2 bg-[#E6CA65] text-black px-5 py-2 rounded-lg text-xs font-bold hover:bg-[#d8bd58] transition"><Save className="w-4 h-4" /> {editingNews ? 'Actualizar' : 'Crear'}</button>
+                <button onClick={() => { setShowNewsForm(false); setEditingNews(null); }} className="px-5 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-white border border-[#333] transition">Cancelar</button>
+              </div>
+            </div>
+          )}
+          {newsList.length === 0 ? (
+            <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-8 text-center">
+              <Newspaper className="w-10 h-10 text-gray-600 mx-auto mb-3" />
+              <p className="text-gray-400">No hay novedades publicadas.</p>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {newsList.map(n => (
+                <div key={n.id} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 flex items-center justify-between gap-4 hover:border-[#444] transition">
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-gray-200 truncate">{n.titulo}</p>
+                    <p className="text-xs text-gray-500 mt-0.5 truncate">{n.descripcion || 'Sin descripción'}{n.url ? ' — Tiene enlace' : ''}{n.adjuntos?.length ? ` — ${n.adjuntos.length} adjunto(s)` : ''}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => { setEditingNews(n); setNewsForm({ titulo: n.titulo, descripcion: n.descripcion, url: n.url || '' }); setNewsAdjuntos(n.adjuntos || []); setShowNewsForm(true); }} className="p-2 text-gray-400 hover:text-[#E6CA65] transition"><Pencil className="w-4 h-4" /></button>
+                    <button onClick={() => handleDeleteNews(n.id)} className="p-2 text-gray-400 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {activeSection === 'tests' && (
+        <div className="space-y-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+            <h3 className="text-lg font-bold text-gray-200">Tests y Resultados</h3>
+            <div className="relative w-full sm:w-72">
+              <input type="text" placeholder="Buscar candidato..." value={testCandidateFilter} onChange={e => setTestCandidateFilter(e.target.value)} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm" />
+            </div>
+          </div>
+
+          <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
+            <h4 className="font-bold text-[#E6CA65] mb-3">Tests disponibles</h4>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {testModules.map(t => (
+                <div key={t.id} className="bg-[#252525] border border-[#333] rounded-lg p-3">
+                  <p className="font-semibold text-gray-200 text-sm">{t.titulo}</p>
+                  <p className="text-xs text-gray-500">{t.preguntas.length} preguntas</p>
+                  <p className="text-xs text-gray-400 mt-1">{candidates.filter(c => c.test_results?.some((tr: any) => tr.test === t.titulo)).length} completado(s)</p>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl overflow-hidden">
+            <div className="p-4 border-b border-[#2A2A2A]">
+              <h4 className="font-bold text-gray-200 text-sm">Candidatos y sus tests</h4>
+            </div>
+            {filteredCandidates.length === 0 ? (
+              <div className="p-8 text-center text-gray-500 text-sm">No se encontraron candidatos.</div>
+            ) : (
+              <div className="divide-y divide-[#2A2A2A]">
+                {filteredCandidates.map(c => (
+                  <div key={c.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-[#222] transition">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-200">{c.nombre}</p>
+                      <p className="text-xs text-gray-500">{c.email || 'Sin email'}</p>
+                      {c.test_results && c.test_results.length > 0 ? (
+                        <div className="flex flex-wrap gap-1.5 mt-1.5">
+                          {c.test_results.map((tr: any, i: number) => (
+                            <span key={i} className="text-[10px] bg-[#252525] border border-[#444] text-[#E6CA65] px-2 py-0.5 rounded-full">{tr.test}: {tr.score}</span>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-600 mt-1">Sin tests realizados</p>
+                      )}
+                    </div>
+                    {c.email && (
+                      <button onClick={() => shareTestLink(c.email, c.nombre)} className="flex items-center gap-1.5 text-xs text-green-400 bg-green-900/20 border border-green-800/30 px-3 py-1.5 rounded-lg hover:bg-green-900/30 transition flex-shrink-0">
+                        <Send className="w-3 h-3" /> Enviar test
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       )}
     </div>
