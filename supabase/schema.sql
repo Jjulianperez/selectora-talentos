@@ -121,6 +121,14 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- BLOQUE 4: RLS (Row Level Security)
 -- ============================================
 
+-- Permisos base de tabla
+GRANT INSERT ON candidates TO anon;
+GRANT SELECT ON vacancies TO anon;
+GRANT SELECT ON news TO anon;
+GRANT ALL ON candidates TO authenticated;
+GRANT ALL ON vacancies TO authenticated;
+GRANT ALL ON news TO authenticated;
+
 ALTER TABLE candidates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vacancies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE news ENABLE ROW LEVEL SECURITY;
