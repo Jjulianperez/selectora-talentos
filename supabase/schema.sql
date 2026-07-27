@@ -183,6 +183,12 @@ CREATE POLICY "vacancies_delete_auth"
   TO authenticated
   USING (true);
 
+-- authenticated (admin): SELECT completo
+CREATE POLICY "vacancies_select_auth"
+  ON vacancies FOR SELECT
+  TO authenticated
+  USING (true);
+
 -- NEWS:
 -- anon (público): solo SELECT (ver novedades)
 CREATE POLICY "news_select_public"
@@ -204,6 +210,12 @@ CREATE POLICY "news_update_auth"
 
 CREATE POLICY "news_delete_auth"
   ON news FOR DELETE
+  TO authenticated
+  USING (true);
+
+-- authenticated (admin): SELECT completo
+CREATE POLICY "news_select_auth"
+  ON news FOR SELECT
   TO authenticated
   USING (true);
 
