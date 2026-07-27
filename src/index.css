@@ -255,15 +255,6 @@ input[type="date"]::-webkit-calendar-picker-indicator {
   transition: width 0.4s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* === WhatsApp float button === */
-@keyframes waPulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(37, 211, 102, 0.4); }
-  50% { box-shadow: 0 0 0 10px rgba(37, 211, 102, 0); }
-}
-.wa-float {
-  animation: waPulse 2.5s infinite;
-}
-
 /* === Inline validation === */
 .field-error input,
 .field-error select,
