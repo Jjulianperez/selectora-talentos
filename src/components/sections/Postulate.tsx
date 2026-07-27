@@ -24,6 +24,7 @@ interface PostForm {
   provincia: string;
   linkedin: string;
   sector: string;
+  sectorPublicoDetalle: string;
   puesto: string;
   buenaConducta: string;
   carnetManejo: string;
@@ -42,7 +43,7 @@ interface PostForm {
 const emptyForm: PostForm = {
   tipoPostulacion: 'espontanea', vacanteSeleccionada: '',
   nombre: '', dni: '', fechaNac: '', telefono: '', email: '',
-  localidad: '', provincia: '', linkedin: '', sector: '', puesto: '',
+  localidad: '', provincia: '', linkedin: '', sector: '', sectorPublicoDetalle: '', puesto: '',
   buenaConducta: 'No', carnetManejo: 'No posee',
   nivelEducativo: '', titulo: '', areasExp: [], areasExpOtros: '',
   habilidades: [], habilidadesOtros: '', aniosExp: '', ultimoCargo: '',
@@ -145,7 +146,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
       vacante_seleccionada: form.vacanteSeleccionada,
       nombre: form.nombre, dni: form.dni, fecha_nac: form.fechaNac,
       telefono: form.telefono, email: form.email, localidad: form.localidad,
-      provincia: form.provincia, linkedin: form.linkedin, sector: form.sector, puesto: puestoFinal,
+      provincia: form.provincia, linkedin: form.linkedin, sector: form.sector, sector_publico_detalle: form.sectorPublicoDetalle, puesto: puestoFinal,
       buena_conducta: form.buenaConducta, carnet_manejo: form.carnetManejo,
       nivel_educativo: form.nivelEducativo, titulo: form.titulo,
       areas_exp: form.areasExp, areas_exp_otros: form.areasExpOtros,
@@ -293,12 +294,18 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
               <div><label className="form-label">Cargo en último empleo</label><input type="text" value={form.ultimoCargo} onChange={e => setForm({ ...form, ultimoCargo: e.target.value })} className={inputClass} /></div>
               <div>
                 <label className="form-label">Sector</label>
-                <select value={form.sector} onChange={e => setForm({ ...form, sector: e.target.value })} className={inputClass}>
+                <select value={form.sector} onChange={e => setForm({ ...form, sector: e.target.value, sectorPublicoDetalle: e.target.value !== 'Público' ? '' : form.sectorPublicoDetalle })} className={inputClass}>
                   <option value="">Seleccionar...</option>
                   <option value="Público">Público</option>
                   <option value="Privado">Privado</option>
                 </select>
               </div>
+              {form.sector === 'Público' && (
+                <div>
+                  <label className="form-label">Especificá el sector público</label>
+                  <input type="text" value={form.sectorPublicoDetalle} onChange={e => setForm({ ...form, sectorPublicoDetalle: e.target.value })} className={inputClass} placeholder="Ej: Municipalidad, Hospital, Escuela..." />
+                </div>
+              )}
               <div><label className="form-label">Última Empresa</label><input type="text" value={form.ultimaEmpresa} onChange={e => setForm({ ...form, ultimaEmpresa: e.target.value })} className={inputClass} /></div>
             </div>
           </div>

@@ -23,6 +23,7 @@ export interface Candidate {
   provincia: string;
   linkedin: string;
   sector: string;
+  sector_publico_detalle: string;
   puesto: string;
   buena_conducta: string;
   carnet_manejo: string;

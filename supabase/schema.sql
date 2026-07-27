@@ -61,6 +61,7 @@ CREATE TABLE candidates (
   provincia TEXT DEFAULT '',
   linkedin TEXT DEFAULT '',
   sector TEXT DEFAULT '',
+  sector_publico_detalle TEXT DEFAULT '',
   puesto TEXT DEFAULT '',
   buena_conducta TEXT DEFAULT 'No',
   carnet_manejo TEXT DEFAULT 'No posee',

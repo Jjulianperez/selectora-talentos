@@ -152,7 +152,7 @@ export default function CandidateTable({ candidates, onUpdate }: Props) {
                 <div><p className="text-gray-500 text-xs">Localidad</p><p className="text-white">{perfilParaVer.localidad || 'N/A'}</p></div>
                 <div><p className="text-gray-500 text-xs">Provincia</p><p className="text-white">{perfilParaVer.provincia || 'N/A'}</p></div>
                 <div><p className="text-gray-500 text-xs">LinkedIn</p><p className="text-white break-all">{perfilParaVer.linkedin || 'N/A'}</p></div>
-                <div><p className="text-gray-500 text-xs">Sector</p><p className="text-white">{perfilParaVer.sector || 'N/A'}</p></div>
+                <div><p className="text-gray-500 text-xs">Sector</p><p className="text-white">{perfilParaVer.sector || 'N/A'}{perfilParaVer.sector === 'Público' && perfilParaVer.sector_publico_detalle ? ` — ${perfilParaVer.sector_publico_detalle}` : ''}</p></div>
               </div>
             </div>
             <div>
