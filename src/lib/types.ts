@@ -1,6 +1,9 @@
 export interface TestResult {
   test: string;
   score: string;
+  respuestas?: number[];
+  interpretacion?: string;
+  fecha?: string;
 }
 
 export interface Attachment {
@@ -65,4 +68,4 @@ export interface Notification {
   read: boolean;
 }
 
-export type TabId = 'inicio' | 'postulate' | 'vacantes' | 'novedades' | 'tests';
+export type TabId = 'inicio' | 'postulate' | 'vacantes' | 'novedades';

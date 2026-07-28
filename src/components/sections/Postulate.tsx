@@ -1,9 +1,11 @@
 ﻿import { useState, useEffect } from 'react';
-import { CheckCircle, Paperclip, AlertCircle } from 'lucide-react';
+import { CheckCircle, Paperclip, AlertCircle, Brain } from 'lucide-react';
 import { areasATS, habilidadesATS } from '../../data/areas';
+import { testModules } from '../../data/tests';
 import { supabase, BUCKET_NAME } from '../../lib/supabase';
 import Modal from '../ui/Modal';
-import type { TabId, Attachment } from '../../lib/types';
+import TestRunner from './TestRunner';
+import type { TabId, Attachment, TestResult } from '../../lib/types';
 
 interface Props {
   onNavigate: (tab: TabId) => void;
@@ -59,6 +61,8 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [submitError, setSubmitError] = useState('');
   const [vacancies, setVacancies] = useState<{ id: string; titulo: string }[]>([]);
+  const [testResults, setTestResults] = useState<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
+  const [showTests, setShowTests] = useState(false);
 
   useEffect(() => {
     supabase.from('vacancies').select('id, titulo').order('created_at', { ascending: false }).then(({ data }) => {
@@ -103,8 +107,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
     if (file) setForm(prev => ({ ...prev, cv: { nombre: file.name, tipo: 'documento', url: URL.createObjectURL(file) } }));
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const doSubmit = async (incluirTests: boolean) => {
     if (!validate()) return;
 
     setUploading(true);
@@ -153,7 +156,8 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
       habilidades: form.habilidades, habilidades_otros: form.habilidadesOtros,
       anios_exp: form.aniosExp, ultimo_cargo: form.ultimoCargo,
       ultima_empresa: form.ultimaEmpresa, cv: cvData,
-      test_results: [], observaciones: '',
+       test_results: incluirTests ? testResults : [],
+       observaciones: '',
     };
 
     const { error } = await supabase.from('candidates').insert(candidate);
@@ -168,6 +172,13 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
     setSubmitted(true);
     onPostulation(`Nueva postulación: ${form.nombre} para ${puestoFinal}`);
     setForm(emptyForm);
+    setTestResults([]);
+    setShowTests(false);
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    doSubmit(testResults.length > 0);
   };
 
   const CheckboxPills = ({ options, field }: { options: string[]; field: 'areasExp' | 'habilidades' }) => (
@@ -343,6 +354,62 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
                 <input type="file" onChange={handleCvUpload} accept=".pdf,.doc,.docx" className="hidden" />
               </label>
             </div>
+          </div>
+
+          {/* Evaluaciones Psicotécnicas */}
+          <div className="form-section">
+            <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '7' : '6'}>
+              <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Evaluaciones Psicotécnicas (Opcional)</h3>
+            </div>
+            <p className="text-sm text-gray-400 mb-4">
+              Podés completar nuestras evaluaciones antes de enviar tu postulación. Esto permitirá a la consultora conocer mejor tu perfil. También podés enviar la postulación sin realizar los tests.
+            </p>
+
+            {!showTests && testResults.length === 0 && (
+              <div className="flex flex-col sm:flex-row gap-3">
+                <button type="button" onClick={() => setShowTests(true)}
+                  className="flex-1 bg-[#E6CA65] text-black font-bold py-3 px-5 rounded-lg hover:bg-[#d8bd58] transition-all duration-200 text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:shadow-[#E6CA65]/10">
+                  <Brain className="w-4 h-4" /> Completar tests para la postulación
+                </button>
+                <button type="button" onClick={() => doSubmit(false)}
+                  className="flex-1 bg-[#252525] text-gray-300 border border-[#444] font-bold py-3 px-5 rounded-lg hover:bg-[#333] hover:border-[#555] transition-all duration-200 text-sm flex items-center justify-center gap-2">
+                  Enviar postulación sin realizar los tests
+                </button>
+              </div>
+            )}
+
+            {showTests && (
+              <div className="mt-2 animate-fade-up">
+                <TestRunner
+                  existingResults={testResults}
+                  onComplete={(results) => {
+                    setTestResults(results);
+                    setShowTests(false);
+                  }}
+                  onBack={() => setShowTests(false)}
+                />
+              </div>
+            )}
+
+            {testResults.length > 0 && !showTests && (
+              <div className="mt-2 bg-emerald-900/10 border border-emerald-700/30 rounded-lg p-4">
+                <div className="flex items-center gap-2 mb-2">
+                  <CheckCircle className="w-5 h-5 text-emerald-400" />
+                  <span className="text-emerald-300 font-semibold text-sm">Tests completados ({testResults.length}/{testModules.length})</span>
+                </div>
+                <div className="flex flex-wrap gap-2 mb-3">
+                  {testResults.map((tr, i) => (
+                    <span key={i} className="text-xs bg-[#252525] border border-emerald-800/40 text-emerald-300 px-2 py-1 rounded">
+                      {tr.test}: {tr.score}
+                    </span>
+                  ))}
+                </div>
+                <button type="button" onClick={() => setShowTests(true)}
+                  className="text-xs text-emerald-400 hover:text-emerald-300 underline">
+                  Revisar o completar más tests
+                </button>
+              </div>
+            )}
           </div>
 
           {submitError && (

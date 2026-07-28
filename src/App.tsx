@@ -6,7 +6,6 @@ import Home from './components/sections/Home';
 import Postulate from './components/sections/Postulate';
 import Vacancies from './components/sections/Vacancies';
 import News from './components/sections/News';
-import Tests from './components/sections/Tests';
 import AdminLogin from './components/admin/AdminLogin';
 import AdminDashboard from './components/admin/AdminDashboard';
 import NotificationPopup from './components/ui/NotificationPopup';
@@ -134,7 +133,6 @@ export default function App() {
             />
           )}
           {activeTab === 'novedades' && <News />}
-          {activeTab === 'tests' && <Tests />}
         </div>
       </main>
 

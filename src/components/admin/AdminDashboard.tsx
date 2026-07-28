@@ -1,7 +1,6 @@
-﻿import { useState, useEffect, useRef } from 'react';
-import { Shield, FileSpreadsheet, RefreshCw, Plus, X, Pencil, Trash2, Briefcase, Save, Newspaper, FlaskConical, Upload, FileText, ExternalLink, Send } from 'lucide-react';
+﻿import { useState, useEffect } from 'react';
+import { Shield, FileSpreadsheet, RefreshCw, Plus, X, Pencil, Trash2, Briefcase, Save, Newspaper, Upload, FileText } from 'lucide-react';
 import { supabase, BUCKET_NAME } from '../../lib/supabase';
-import { testModules } from '../../data/tests';
 import type { Candidate, Vacancy, News, Attachment } from '../../lib/types';
 import CandidateTable from './CandidateTable';
 
@@ -10,13 +9,12 @@ interface Props {
   onNotification: (msg: string) => void;
 }
 
-type Section = 'candidatos' | 'vacantes' | 'novedades' | 'tests';
+type Section = 'candidatos' | 'vacantes' | 'novedades';
 
 export default function AdminDashboard({ onLogout, onNotification }: Props) {
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [vacancies, setVacancies] = useState<Vacancy[]>([]);
   const [newsList, setNewsList] = useState<News[]>([]);
-  const [testScores, setTestScores] = useState<any[]>([]);
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncTime, setLastSyncTime] = useState(new Date().toLocaleTimeString());
   const [activeSection, setActiveSection] = useState<Section>('candidatos');
@@ -31,22 +29,18 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
   const [newsAdjuntos, setNewsAdjuntos] = useState<Attachment[]>([]);
   const [uploadingNews, setUploadingNews] = useState(false);
 
-  const [testCandidateFilter, setTestCandidateFilter] = useState('');
-
   useEffect(() => { loadData(); }, []);
 
   const loadData = async () => {
     setIsSyncing(true);
-    const [candRes, vacRes, newsRes, scoresRes] = await Promise.all([
+    const [candRes, vacRes, newsRes] = await Promise.all([
       supabase.from('candidates').select('*'),
       supabase.from('vacancies').select('*').order('created_at', { ascending: false }),
       supabase.from('news').select('*').order('created_at', { ascending: false }),
-      supabase.from('test_scores').select('*').order('created_at', { ascending: false }),
     ]);
     if (candRes.data) setCandidates(candRes.data);
     if (vacRes.data) setVacancies(vacRes.data);
     if (newsRes.data) setNewsList(newsRes.data);
-    if (scoresRes.data) setTestScores(scoresRes.data);
     setLastSyncTime(new Date().toLocaleTimeString());
     setIsSyncing(false);
   };
@@ -138,21 +132,11 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
     loadData();
   };
 
-  const shareTestLink = (candidateEmail: string, candidateName: string) => {
-    const msg = `Hola ${candidateName}, te invitamos a completar una evaluación psicotécnica de CV Consultora. Ingresá con tu email "${candidateEmail}" en la sección de Tests de nuestra página: ${window.location.origin}`;
-    window.open(`https://wa.me/5492657234459?text=${encodeURIComponent(msg)}`, '_blank');
-  };
-
   const sections: { id: Section; label: string; icon: React.ReactNode }[] = [
     { id: 'candidatos', label: 'Candidatos', icon: <Shield className="w-4 h-4" /> },
     { id: 'vacantes', label: 'Vacantes', icon: <Briefcase className="w-4 h-4" /> },
     { id: 'novedades', label: 'Novedades', icon: <Newspaper className="w-4 h-4" /> },
-    { id: 'tests', label: 'Tests', icon: <FlaskConical className="w-4 h-4" /> },
   ];
-
-  const filteredCandidates = testCandidateFilter
-    ? candidates.filter(c => c.nombre.toLowerCase().includes(testCandidateFilter.toLowerCase()) || c.email?.toLowerCase().includes(testCandidateFilter.toLowerCase()))
-    : candidates;
 
   return (
     <div className="space-y-6">
@@ -161,7 +145,7 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
           <h2 className="text-3xl font-black text-[#E6CA65] uppercase tracking-tight flex items-center gap-2">
             <Shield className="w-8 h-8" /> Portal de Administración
           </h2>
-          <p className="text-gray-400 mt-1">Gestión de candidatos, vacantes, novedades y tests.</p>
+          <p className="text-gray-400 mt-1">Gestión de candidatos, vacantes y novedades.</p>
         </div>
         <div className="flex flex-wrap items-center gap-3">
           <div className="flex items-center gap-2 bg-[#1A1A1A] px-3.5 py-2 rounded-xl border border-[#2A2A2A] text-xs shadow-inner">
@@ -189,8 +173,8 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
           <p className="text-3xl font-black text-emerald-400">{newsList.length}</p>
         </div>
         <div className="bg-[#1A1A1A] p-4 rounded-xl border border-[#2A2A2A] text-center space-y-1">
-          <span className="text-[10px] text-gray-400 font-bold uppercase">Tests Realizados</span>
-          <p className="text-3xl font-black text-purple-400">{testScores.length}</p>
+          <span className="text-[10px] text-gray-400 font-bold uppercase">Tests en Postulaciones</span>
+          <p className="text-3xl font-black text-purple-400">{candidates.filter(c => (c.test_results || []).length > 0).length}</p>
         </div>
       </div>
 
@@ -320,53 +304,6 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
               ))}
             </div>
           )}
-        </div>
-      )}
-
-      {activeSection === 'tests' && (
-        <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-            <h3 className="text-lg font-bold text-gray-200">Tests y Resultados</h3>
-            <div className="relative w-full sm:w-72">
-              <input type="text" placeholder="Buscar por email..." value={testCandidateFilter} onChange={e => setTestCandidateFilter(e.target.value)} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm" />
-            </div>
-          </div>
-
-          <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-5">
-            <h4 className="font-bold text-[#E6CA65] mb-3">Tests disponibles</h4>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-              {testModules.map(t => (
-                <div key={t.id} className="bg-[#252525] border border-[#333] rounded-lg p-3">
-                  <p className="font-semibold text-gray-200 text-sm">{t.titulo}</p>
-                  <p className="text-xs text-gray-500">{t.preguntas.length} preguntas</p>
-                  <p className="text-xs text-gray-400 mt-1">{testScores.filter(s => s.test === t.titulo).length} completado(s)</p>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          <div className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl overflow-hidden">
-            <div className="p-4 border-b border-[#2A2A2A]">
-              <h4 className="font-bold text-gray-200 text-sm">Resultados de tests</h4>
-            </div>
-            {testScores.length === 0 ? (
-              <div className="p-8 text-center text-gray-500 text-sm">No hay tests completados aún.</div>
-            ) : (
-              <div className="divide-y divide-[#2A2A2A]">
-                {testScores
-                  .filter(s => !testCandidateFilter || s.email.toLowerCase().includes(testCandidateFilter.toLowerCase()))
-                  .map(s => (
-                    <div key={s.id} className="p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 hover:bg-[#222] transition">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-gray-200">{s.email}</p>
-                        <p className="text-xs text-gray-500">{new Date(s.created_at).toLocaleString('es-AR')}</p>
-                      </div>
-                      <span className="text-[10px] bg-[#252525] border border-[#444] text-[#E6CA65] px-2 py-0.5 rounded-full font-semibold">{s.test}: {s.score}</span>
-                    </div>
-                  ))}
-              </div>
-            )}
-          </div>
         </div>
       )}
     </div>

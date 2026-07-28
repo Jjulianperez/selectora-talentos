@@ -1,5 +1,5 @@
 ﻿import { useState, useRef, useCallback } from 'react';
-import { Search, FileSpreadsheet, Eye, FileText, Trash2, X, Download, Brain, Users } from 'lucide-react';
+import { Search, FileSpreadsheet, Eye, FileText, Trash2, Download, Brain, Users, CheckCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import Modal from '../ui/Modal';
 import type { Candidate } from '../../lib/types';
@@ -87,7 +87,18 @@ export default function CandidateTable({ candidates, onUpdate }: Props) {
                   <td className="py-3 px-4 text-xs text-gray-300">{c.dni || '-'}</td>
                   <td className="py-3 px-4 text-xs text-gray-300">{c.email || '-'}</td>
                   <td className="py-3 px-4 text-xs text-gray-200">{c.puesto}</td>
-                  <td className="py-3 px-4 text-xs text-gray-400 max-w-[200px] truncate">{(c.test_results || []).map((t: any) => `${t.test}: ${t.score}`).join(' | ') || 'Sin tests'}</td>
+                  <td className="py-3 px-4 text-xs">
+                    {(c.test_results || []).length > 0 ? (
+                      <span className="inline-flex items-center gap-1.5 text-emerald-400 font-semibold">
+                        <CheckCircle className="w-3.5 h-3.5" /> Completado
+                        <span className="text-gray-500 font-normal">
+                          ({(c.test_results || []).length} test{(c.test_results || []).length !== 1 ? 's' : ''})
+                        </span>
+                      </span>
+                    ) : (
+                      <span className="text-gray-500">Sin realizar</span>
+                    )}
+                  </td>
                   <td className="py-3 px-4 relative">
                     <textarea value={c.observaciones || ''} onChange={e => actualizarObservacion(c.id, e.target.value)} placeholder="Escribir..." className="w-full bg-[#252525] border border-[#333] text-gray-200 text-xs rounded p-1.5 h-10 resize-none focus:outline-none focus:border-[#E6CA65]"></textarea>
                     {savingId === c.id && <span className="absolute top-1 right-1 text-[8px] text-[#E6CA65]">guardando...</span>}
@@ -189,15 +200,45 @@ export default function CandidateTable({ candidates, onUpdate }: Props) {
             <div>
               <h4 className="text-[#F2D2A0] font-bold mb-3 border-b border-[#333] pb-2">Evaluaciones Psicotécnicas</h4>
               {perfilParaVer.test_results && perfilParaVer.test_results.length > 0 ? (
-                <div className="space-y-2">
-                  {perfilParaVer.test_results.map((tr: any, i: number) => (
-                    <div key={i} className="flex justify-between items-center bg-[#252525] p-3 rounded text-sm">
-                      <span className="text-gray-300 flex items-center gap-2"><Brain className="w-4 h-4 text-[#E6CA65]" /> {tr.test}</span>
-                      <span className="text-[#E6CA65] font-bold text-base">{tr.score}</span>
-                    </div>
-                  ))}
+                <div className="space-y-3">
+                  {perfilParaVer.test_results.map((tr: any, i: number) => {
+                    const scoreStr = tr.score || '';
+                    const [actual, max] = scoreStr.split('/').map(Number);
+                    const pct = max > 0 ? (actual / max) * 100 : 0;
+                    const color = pct >= 80 ? 'text-emerald-400' : pct >= 60 ? 'text-[#E6CA65]' : pct >= 40 ? 'text-orange-400' : 'text-red-400';
+                    return (
+                      <div key={i} className="bg-[#252525] border border-[#333] rounded-lg p-4 space-y-2">
+                        <div className="flex items-center justify-between">
+                          <span className="text-gray-200 font-semibold flex items-center gap-2">
+                            <Brain className="w-4 h-4 text-[#E6CA65]" /> {tr.test}
+                          </span>
+                          <span className={`font-bold text-lg ${color}`}>{scoreStr}</span>
+                        </div>
+                        <div className="flex items-center gap-2 text-xs text-gray-500">
+                          {tr.fecha && <span>Fecha: {new Date(tr.fecha).toLocaleString('es-AR')}</span>}
+                          {tr.interpretacion && <span className={`font-semibold ${color}`}>{tr.interpretacion}</span>}
+                        </div>
+                        {tr.respuestas && tr.respuestas.length > 0 && (
+                          <div className="pt-1">
+                            <details className="group">
+                              <summary className="text-xs text-gray-500 cursor-pointer hover:text-gray-300 select-none list-none flex items-center gap-1">
+                                <span className="group-open:rotate-90 transition-transform">▶</span> Ver respuestas
+                              </summary>
+                              <div className="mt-2 space-y-1.5 pl-3">
+                                {tr.respuestas.map((r: number, qi: number) => (
+                                  <p key={qi} className="text-xs text-gray-400">
+                                    <span className="text-gray-600">P{qi + 1}:</span> Opción {r + 1}
+                                  </p>
+                                ))}
+                              </div>
+                            </details>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
-              ) : <p className="text-gray-600 text-xs">Sin tests realizados.</p>}
+              ) : <p className="text-gray-500 text-sm flex items-center gap-2"><Brain className="w-4 h-4 text-gray-600" /> Sin tests realizados.</p>}
             </div>
             <div>
               <h4 className="text-[#F2D2A0] font-bold mb-3 border-b border-[#333] pb-2">Observaciones</h4>

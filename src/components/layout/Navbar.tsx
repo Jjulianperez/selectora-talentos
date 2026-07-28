@@ -1,4 +1,4 @@
-import { Home, FileText, Briefcase, Bell, FlaskConical } from 'lucide-react';
+import { Home, FileText, Briefcase, Bell } from 'lucide-react';
 import type { TabId } from '../../lib/types';
 
 interface Props {
@@ -11,7 +11,6 @@ const tabs: { id: TabId; icon: React.ReactNode; label: string }[] = [
   { id: 'postulate', icon: <FileText className="w-5 h-5" />, label: 'Postulate' },
   { id: 'vacantes', icon: <Briefcase className="w-5 h-5" />, label: 'Vacantes' },
   { id: 'novedades', icon: <Bell className="w-5 h-5" />, label: 'Novedades' },
-  { id: 'tests', icon: <FlaskConical className="w-5 h-5" />, label: 'Tests' },
 ];
 
 export default function Navbar({ activeTab, onTabChange }: Props) {

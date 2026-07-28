@@ -1,8 +1,15 @@
 -- ============================================
--- CV Consultora - Supabase Schema v4
+-- CV Consultora - Supabase Schema v5
 -- Ejecutar esto en el SQL Editor de Supabase
 -- IMPORTANTE: Si ya ejecutaste la versión anterior,
 -- primero ejecuta el bloque "DROP" que está al final.
+--
+-- CAMBIOS v5:
+-- - Los tests ya no son una página independiente.
+-- - Son un paso opcional dentro del formulario de postulación.
+-- - Los resultados se guardan en test_results (JSONB) de candidates.
+-- - La tabla test_scores se mantiene solo para datos históricos.
+-- - Se agregó columna tests_realizados a candidates.
 -- ============================================
 
 -- ============================================
@@ -42,6 +49,7 @@ DROP FUNCTION IF EXISTS update_test_results(text, jsonb);
 DROP TABLE IF EXISTS candidates CASCADE;
 DROP TABLE IF EXISTS vacancies CASCADE;
 DROP TABLE IF EXISTS news CASCADE;
+DROP TABLE IF EXISTS test_scores CASCADE;
 
 -- ============================================
 -- BLOQUE 2: Tablas
@@ -99,13 +107,7 @@ CREATE TABLE news (
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
-CREATE TABLE test_scores (
-  id BIGSERIAL PRIMARY KEY,
-  email TEXT NOT NULL,
-  test TEXT NOT NULL,
-  score TEXT NOT NULL,
-  created_at TIMESTAMPTZ DEFAULT NOW()
-);
+-- test_scores removida en v5 — los resultados se guardan en candidates.test_results
 
 -- ============================================
 -- BLOQUE 3: RPC Functions
@@ -133,16 +135,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 GRANT INSERT ON candidates TO anon;
 GRANT SELECT ON vacancies TO anon;
 GRANT SELECT ON news TO anon;
-GRANT INSERT ON test_scores TO anon;
 GRANT ALL ON candidates TO authenticated;
 GRANT ALL ON vacancies TO authenticated;
 GRANT ALL ON news TO authenticated;
-GRANT ALL ON test_scores TO authenticated;
 
 ALTER TABLE candidates ENABLE ROW LEVEL SECURITY;
 ALTER TABLE vacancies ENABLE ROW LEVEL SECURITY;
 ALTER TABLE news ENABLE ROW LEVEL SECURITY;
-ALTER TABLE test_scores ENABLE ROW LEVEL SECURITY;
 
 -- CANDIDATES:
 -- anon (público): solo INSERT (formularios de postulación)
@@ -227,19 +226,6 @@ CREATE POLICY "news_delete_auth"
 -- authenticated (admin): SELECT completo
 CREATE POLICY "news_select_auth"
   ON news FOR SELECT
-  TO authenticated
-  USING (true);
-
--- TEST_SCORES:
--- anon (público): solo INSERT (guardar resultado de test)
-CREATE POLICY "test_scores_insert_public"
-  ON test_scores FOR INSERT
-  TO anon
-  WITH CHECK (true);
-
--- authenticated (admin): SELECT completo
-CREATE POLICY "test_scores_select_auth"
-  ON test_scores FOR SELECT
   TO authenticated
   USING (true);
 
