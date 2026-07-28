@@ -206,10 +206,15 @@ export default function TestRunner({ existingResults = [], onComplete, onBack }:
         })}
       </div>
 
-      {todosCompletados && (
+      {resultados.length > 0 && (
         <button type="button" onClick={() => onComplete(resultados)}
-          className="w-full bg-emerald-600 text-white font-bold py-4 rounded-lg hover:bg-emerald-500 transition-all duration-200 text-lg flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30">
-          <CheckCircle className="w-5 h-5" /> Continuar con la Postulación
+          className={`w-full font-bold py-4 rounded-lg transition-all duration-200 text-lg flex items-center justify-center gap-2 shadow-lg ${
+            todosCompletados
+              ? 'bg-emerald-600 text-white hover:bg-emerald-500 shadow-emerald-900/30'
+              : 'bg-[#E6CA65] text-black hover:bg-[#d8bd58] shadow-[#E6CA65]/10'
+          }`}>
+          <CheckCircle className="w-5 h-5" />
+          {todosCompletados ? 'Continuar con la Postulación' : `Continuar con ${resultados.length}/${testModules.length} tests completados`}
         </button>
       )}
     </div>
