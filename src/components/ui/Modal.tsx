@@ -43,9 +43,12 @@ export default function Modal({ open, onClose, title, subtitle, icon, size = 'md
     <div
       ref={overlayRef}
       onClick={handleOverlayClick}
-      className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4 animate-pop-in"
+      className="fixed inset-0 z-50 bg-black/90 backdrop-blur-md flex items-center justify-center p-4 animate-pop-in"
     >
-      <div className={`bg-[#1A1A1A] border border-[#333] rounded-xl w-full ${sizeClasses[size]} shadow-2xl flex flex-col max-h-[90vh] overflow-hidden`}>
+      <div className={`relative bg-[#1A1A1A] border border-[#444] rounded-xl w-full ${sizeClasses[size]} shadow-2xl shadow-black/50 flex flex-col max-h-[90vh] overflow-hidden`}>
+        <button onClick={onClose} className="absolute top-3 right-3 z-10 text-gray-400 hover:text-white bg-black/60 hover:bg-black/80 p-1.5 rounded-full transition-colors">
+          <X className="w-5 h-5" />
+        </button>
         {(title || headerRight) && (
           <div className="px-5 py-4 border-b border-[#2A2A2A] flex justify-between items-center bg-[#1F1F1F] flex-shrink-0">
             <div className="flex items-center gap-3 min-w-0">
@@ -57,9 +60,6 @@ export default function Modal({ open, onClose, title, subtitle, icon, size = 'md
             </div>
             <div className="flex items-center gap-2 flex-shrink-0 ml-3">
               {headerRight}
-              <button onClick={onClose} className="text-gray-400 hover:text-white p-1 rounded-lg hover:bg-[#2F2F2F] transition-colors">
-                <X className="w-5 h-5" />
-              </button>
             </div>
           </div>
         )}
