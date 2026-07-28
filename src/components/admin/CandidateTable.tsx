@@ -240,42 +240,6 @@ export default function CandidateTable({ candidates, onUpdate }: Props) {
                 </div>
               ) : <p className="text-gray-500 text-sm flex items-center gap-2"><Brain className="w-4 h-4 text-gray-600" /> Sin tests realizados.</p>}
             </div>
-            {perfilParaVer.descripcion && (
-              <div>
-                <h4 className="text-[#F2D2A0] font-bold mb-3 border-b border-[#333] pb-2">Presentación</h4>
-                <p className="text-gray-300 text-sm whitespace-pre-wrap leading-relaxed">{perfilParaVer.descripcion}</p>
-              </div>
-            )}
-            {perfilParaVer.links && (
-              <div>
-                <h4 className="text-[#F2D2A0] font-bold mb-3 border-b border-[#333] pb-2">Links de Interés</h4>
-                <div className="space-y-1">
-                  {perfilParaVer.links.split('\n').filter(Boolean).map((link: string, i: number) => (
-                    <a key={i} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:underline text-sm block truncate">{link}</a>
-                  ))}
-                </div>
-              </div>
-            )}
-            {perfilParaVer.adjuntos && perfilParaVer.adjuntos.length > 0 && (
-              <div>
-                <h4 className="text-[#F2D2A0] font-bold mb-3 border-b border-[#333] pb-2">Archivos Adjuntos</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  {perfilParaVer.adjuntos.map((adj: any, i: number) => (
-                    <div key={i} className="bg-[#252525] border border-[#333] rounded-lg p-2 text-center">
-                      {adj.tipo === 'foto' ? (
-                        <img src={adj.url} alt={adj.nombre} className="w-full h-20 object-cover rounded" />
-                      ) : adj.tipo === 'video' ? (
-                        <video src={adj.url} controls className="w-full h-20 object-cover rounded" />
-                      ) : (
-                        <FileText className="w-8 h-8 text-[#E6CA65] mx-auto mt-2" />
-                      )}
-                      <p className="text-[9px] text-gray-500 truncate mt-1">{adj.nombre}</p>
-                      <a href={adj.url} target="_blank" download={adj.nombre} className="text-[10px] text-blue-400 hover:underline block mt-1">Descargar</a>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
             <div>
               <h4 className="text-[#F2D2A0] font-bold mb-3 border-b border-[#333] pb-2">Observaciones</h4>
               <textarea value={perfilParaVer.observaciones || ''} onChange={e => { actualizarObservacion(perfilParaVer.id, e.target.value); setPerfilParaVer({ ...perfilParaVer, observaciones: e.target.value }); }} placeholder="Observaciones..." className="w-full bg-[#252525] border border-[#333] text-gray-200 text-sm rounded p-3 h-24 resize-y focus:outline-none focus:border-[#E6CA65]"></textarea>
