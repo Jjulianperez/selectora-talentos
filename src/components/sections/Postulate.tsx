@@ -107,7 +107,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
     if (file) setForm(prev => ({ ...prev, cv: { nombre: file.name, tipo: 'documento', url: URL.createObjectURL(file) } }));
   };
 
-  const doSubmit = async (incluirTests: boolean) => {
+  const doSubmit = async (testResultsParaEnviar: typeof testResults) => {
     if (!validate()) return;
 
     setUploading(true);
@@ -156,8 +156,8 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
       habilidades: form.habilidades, habilidades_otros: form.habilidadesOtros,
       anios_exp: form.aniosExp, ultimo_cargo: form.ultimoCargo,
       ultima_empresa: form.ultimaEmpresa, cv: cvData,
-       test_results: incluirTests ? testResults : [],
-       observaciones: '',
+        test_results: testResultsParaEnviar,
+        observaciones: '',
     };
 
     const { error } = await supabase.from('candidates').insert(candidate);
@@ -178,7 +178,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    doSubmit(testResults.length > 0);
+    doSubmit(testResults);
   };
 
   const CheckboxPills = ({ options, field }: { options: string[]; field: 'areasExp' | 'habilidades' }) => (
@@ -371,7 +371,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
                   className="flex-1 bg-[#E6CA65] text-black font-bold py-3 px-5 rounded-lg hover:bg-[#d8bd58] transition-all duration-200 text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:shadow-[#E6CA65]/10">
                   <Brain className="w-4 h-4" /> Completar tests para la postulación
                 </button>
-                <button type="button" onClick={() => doSubmit(false)}
+                <button type="button" onClick={() => doSubmit([])}
                   className="flex-1 bg-[#252525] text-gray-300 border border-[#444] font-bold py-3 px-5 rounded-lg hover:bg-[#333] hover:border-[#555] transition-all duration-200 text-sm flex items-center justify-center gap-2">
                   Enviar postulación sin realizar los tests
                 </button>
