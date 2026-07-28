@@ -163,7 +163,6 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
         observaciones: '',
     };
 
-    console.log('doSubmit - testResultsRef.current es array?', Array.isArray(testResultsParaEnviar), 'largo:', testResultsParaEnviar?.length, 'valor:', JSON.stringify(testResultsParaEnviar));
     const { error } = await supabase.from('candidates').insert(candidate);
     if (error) {
       console.error('Error guardando postulación:', error);
@@ -388,7 +387,6 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
                   existingResults={testResults}
                   onComplete={(results) => {
                     testResultsRef.current = results;
-                    console.log('TestRunner onComplete - saving to ref:', JSON.stringify(results));
                     setTestResults(results);
                     setShowTests(false);
                   }}
