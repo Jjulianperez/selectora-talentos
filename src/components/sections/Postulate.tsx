@@ -1,4 +1,4 @@
-﻿import { useState, useEffect } from 'react';
+﻿import { useState, useEffect, useRef } from 'react';
 import { CheckCircle, Paperclip, AlertCircle, Brain } from 'lucide-react';
 import { areasATS, habilidadesATS } from '../../data/areas';
 import { testModules } from '../../data/tests';
@@ -62,6 +62,8 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
   const [submitError, setSubmitError] = useState('');
   const [vacancies, setVacancies] = useState<{ id: string; titulo: string }[]>([]);
   const [testResults, setTestResults] = useState<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
+  const testResultsRef = useRef(testResults);
+  testResultsRef.current = testResults;
   const [showTests, setShowTests] = useState(false);
 
   useEffect(() => {
@@ -107,8 +109,10 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
     if (file) setForm(prev => ({ ...prev, cv: { nombre: file.name, tipo: 'documento', url: URL.createObjectURL(file) } }));
   };
 
-  const doSubmit = async (testResultsParaEnviar: typeof testResults) => {
+  const doSubmit = async () => {
     if (!validate()) return;
+
+    const testResultsParaEnviar = testResultsRef.current;
 
     setUploading(true);
     setSubmitError('');
@@ -160,6 +164,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
         observaciones: '',
     };
 
+    console.log('Enviando postulación con test_results:', JSON.stringify(testResultsParaEnviar));
     const { error } = await supabase.from('candidates').insert(candidate);
     if (error) {
       console.error('Error guardando postulación:', error);
@@ -178,7 +183,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    doSubmit(testResults);
+    doSubmit();
   };
 
   const CheckboxPills = ({ options, field }: { options: string[]; field: 'areasExp' | 'habilidades' }) => (
@@ -371,7 +376,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
                   className="flex-1 bg-[#E6CA65] text-black font-bold py-3 px-5 rounded-lg hover:bg-[#d8bd58] transition-all duration-200 text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:shadow-[#E6CA65]/10">
                   <Brain className="w-4 h-4" /> Completar tests para la postulación
                 </button>
-                <button type="button" onClick={() => doSubmit([])}
+                <button type="button" onClick={() => { testResultsRef.current = []; doSubmit(); }}
                   className="flex-1 bg-[#252525] text-gray-300 border border-[#444] font-bold py-3 px-5 rounded-lg hover:bg-[#333] hover:border-[#555] transition-all duration-200 text-sm flex items-center justify-center gap-2">
                   Enviar postulación sin realizar los tests
                 </button>
