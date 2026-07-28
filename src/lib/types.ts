@@ -52,6 +52,7 @@ export interface Vacancy {
   titulo: string;
   estado: string;
   descripcion: string;
+  links: string;
   adjuntos: Attachment[];
 }
 

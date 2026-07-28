@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect } from 'react';
-import { Shield, FileSpreadsheet, RefreshCw, Plus, X, Pencil, Trash2, Briefcase, Save, Newspaper, Upload, FileText } from 'lucide-react';
+import { Shield, FileSpreadsheet, RefreshCw, Plus, X, Pencil, Trash2, Briefcase, Save, Newspaper, Upload, FileText, Link, Image } from 'lucide-react';
 import { supabase, BUCKET_NAME } from '../../lib/supabase';
 import type { Candidate, Vacancy, News, Attachment } from '../../lib/types';
 import CandidateTable from './CandidateTable';
@@ -21,7 +21,9 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
 
   const [showVacancyForm, setShowVacancyForm] = useState(false);
   const [editingVacancy, setEditingVacancy] = useState<Vacancy | null>(null);
-  const [vacForm, setVacForm] = useState({ titulo: '', estado: 'Urgente', descripcion: '' });
+  const [vacForm, setVacForm] = useState({ titulo: '', estado: 'Urgente', descripcion: '', links: '' });
+  const [vacAdjuntos, setVacAdjuntos] = useState<Attachment[]>([]);
+  const [uploadingVac, setUploadingVac] = useState(false);
 
   const [showNewsForm, setShowNewsForm] = useState(false);
   const [editingNews, setEditingNews] = useState<News | null>(null);
@@ -67,18 +69,19 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
 
   const handleSaveVacancy = async () => {
     if (!vacForm.titulo.trim()) return;
+    const payload = { titulo: vacForm.titulo, estado: vacForm.estado, descripcion: vacForm.descripcion, links: vacForm.links, adjuntos: vacAdjuntos };
     if (editingVacancy) {
-      const { error } = await supabase.from('vacancies').update({ titulo: vacForm.titulo, estado: vacForm.estado, descripcion: vacForm.descripcion }).eq('id', editingVacancy.id);
+      const { error } = await supabase.from('vacancies').update(payload).eq('id', editingVacancy.id);
       if (error) { alert('Error: ' + error.message); return; }
       onNotification(`Vacante actualizada: ${vacForm.titulo}`);
       setEditingVacancy(null);
     } else {
-      const id = 'VAC-' + Date.now();
-      const { error } = await supabase.from('vacancies').insert({ id, titulo: vacForm.titulo, estado: vacForm.estado, descripcion: vacForm.descripcion, adjuntos: [] });
+      const { error } = await supabase.from('vacancies').insert({ id: 'VAC-' + Date.now(), ...payload });
       if (error) { alert('Error: ' + error.message); return; }
       onNotification(`Vacante creada: ${vacForm.titulo}`);
     }
-    setVacForm({ titulo: '', estado: 'Urgente', descripcion: '' });
+    setVacForm({ titulo: '', estado: 'Urgente', descripcion: '', links: '' });
+    setVacAdjuntos([]);
     setShowVacancyForm(false);
     loadData();
   };
@@ -88,6 +91,22 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
     await supabase.from('vacancies').delete().eq('id', id);
     onNotification('Vacante eliminada');
     loadData();
+  };
+
+  const handleVacancyUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || []);
+    setUploadingVac(true);
+    const nuevos: Attachment[] = [];
+    for (const f of files) {
+      const filePath = `attachments/${Date.now()}_${f.name}`;
+      const { data } = await supabase.storage.from(BUCKET_NAME).upload(filePath, f);
+      if (data) {
+        const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(data.path);
+        nuevos.push({ nombre: f.name, tipo: f.type.includes('image') ? 'foto' : f.type.includes('video') ? 'video' : 'documento', url: urlData.publicUrl });
+      }
+    }
+    setVacAdjuntos(prev => [...prev, ...nuevos]);
+    setUploadingVac(false);
   };
 
   const handleNewsUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -192,7 +211,7 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-bold text-gray-200">Vacantes publicadas</h3>
-            <button onClick={() => { setEditingVacancy(null); setVacForm({ titulo: '', estado: 'Urgente', descripcion: '' }); setShowVacancyForm(true); }} className="flex items-center gap-2 bg-[#E6CA65] text-black px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#d8bd58] transition">
+            <button onClick={() => { setEditingVacancy(null); setVacForm({ titulo: '', estado: 'Urgente', descripcion: '', links: '' }); setVacAdjuntos([]); setShowVacancyForm(true); }} className="flex items-center gap-2 bg-[#E6CA65] text-black px-4 py-2 rounded-lg text-xs font-bold hover:bg-[#d8bd58] transition">
               <Plus className="w-4 h-4" /> Nueva Vacante
             </button>
           </div>
@@ -207,6 +226,34 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
                 <option>Urgente</option><option>Abierta</option><option>Cerrada</option>
               </select>
               <textarea placeholder="Descripción del puesto y requisitos" value={vacForm.descripcion} onChange={e => setVacForm({ ...vacForm, descripcion: e.target.value })} rows={3} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm resize-none" />
+              <textarea placeholder="Links de interés (un link por línea: web, formulario, documentación...)" value={vacForm.links} onChange={e => setVacForm({ ...vacForm, links: e.target.value })} rows={2} className="w-full bg-[#252525] border border-[#333] text-white px-4 py-2.5 rounded-lg focus:outline-none focus:border-[#E6CA65] text-sm resize-none" />
+              <div>
+                <label className="form-label">Imágenes y archivos adjuntos</label>
+                <div className="flex items-center gap-4 border border-dashed border-[#444] p-4 rounded-lg bg-[#222]">
+                  <label className="flex items-center gap-2 bg-[#2D2D2D] border border-[#555] text-gray-300 px-4 py-2 rounded-lg cursor-pointer hover:bg-[#383838] transition text-sm">
+                    <Upload className="w-4 h-4" /> Seleccionar
+                    <input type="file" multiple onChange={handleVacancyUpload} className="hidden" accept="image/*,video/*,.pdf,.doc,.docx" />
+                  </label>
+                  <span className="text-xs text-gray-500">{vacAdjuntos.length} archivo(s) {uploadingVac && '— subiendo...'}</span>
+                </div>
+                {vacAdjuntos.length > 0 && (
+                  <div className="mt-3 grid grid-cols-4 gap-2">
+                    {vacAdjuntos.map((adj, i) => (
+                      <div key={i} className="relative bg-[#252525] border border-[#333] rounded-lg p-2 text-center group">
+                        {adj.tipo === 'foto' ? (
+                          <img src={adj.url} alt={adj.nombre} className="w-full h-16 object-cover rounded" />
+                        ) : adj.tipo === 'video' ? (
+                          <div className="w-full h-16 bg-[#1A1A1A] rounded flex items-center justify-center"><span className="text-xs text-gray-400">Video</span></div>
+                        ) : (
+                          <FileText className="w-6 h-6 text-[#E6CA65] mx-auto mt-3" />
+                        )}
+                        <p className="text-[9px] text-gray-500 truncate mt-1">{adj.nombre}</p>
+                        <button type="button" onClick={() => setVacAdjuntos(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 bg-red-900/60 text-red-300 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
               <div className="flex gap-3">
                 <button onClick={handleSaveVacancy} className="flex items-center gap-2 bg-[#E6CA65] text-black px-5 py-2 rounded-lg text-xs font-bold hover:bg-[#d8bd58] transition"><Save className="w-4 h-4" /> {editingVacancy ? 'Actualizar' : 'Crear'}</button>
                 <button onClick={() => { setShowVacancyForm(false); setEditingVacancy(null); }} className="px-5 py-2 rounded-lg text-xs font-bold text-gray-400 hover:text-white border border-[#333] transition">Cancelar</button>
@@ -221,15 +268,29 @@ export default function AdminDashboard({ onLogout, onNotification }: Props) {
           ) : (
             <div className="space-y-2">
               {vacancies.map(v => (
-                <div key={v.id} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 flex items-center justify-between gap-4 hover:border-[#444] transition">
-                  <div className="flex-1 min-w-0">
-                    <p className="font-semibold text-gray-200 truncate">{v.titulo}</p>
-                    <p className="text-xs text-gray-500 mt-0.5"><span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${v.estado === 'Urgente' ? 'bg-red-500/20 text-red-400' : v.estado === 'Abierta' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>{v.estado}</span></p>
+                <div key={v.id} className="bg-[#1A1A1A] border border-[#2A2A2A] rounded-xl p-4 hover:border-[#444] transition">
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1 min-w-0">
+                      <p className="font-semibold text-gray-200 truncate">{v.titulo}</p>
+                      <p className="text-xs text-gray-500 mt-0.5">
+                        <span className={`inline-block px-2 py-0.5 rounded-full text-[10px] font-bold ${v.estado === 'Urgente' ? 'bg-red-500/20 text-red-400' : v.estado === 'Abierta' ? 'bg-emerald-500/20 text-emerald-400' : 'bg-gray-500/20 text-gray-400'}`}>{v.estado}</span>
+                        {v.descripcion && <span className="ml-2 text-gray-600">{v.descripcion.substring(0, 60)}{v.descripcion.length > 60 ? '...' : ''}</span>}
+                        {v.links && <span className="ml-2 text-blue-500"><Link className="w-3 h-3 inline" /> links</span>}
+                        {v.adjuntos && v.adjuntos.length > 0 && <span className="ml-2 text-[#E6CA65]"><Image className="w-3 h-3 inline" /> {v.adjuntos.length} archivo(s)</span>}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <button onClick={() => { setEditingVacancy(v); setVacForm({ titulo: v.titulo, estado: v.estado, descripcion: v.descripcion, links: v.links || '' }); setVacAdjuntos(v.adjuntos || []); setShowVacancyForm(true); }} className="p-2 text-gray-400 hover:text-[#E6CA65] transition"><Pencil className="w-4 h-4" /></button>
+                      <button onClick={() => handleDeleteVacancy(v.id)} className="p-2 text-gray-400 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => { setEditingVacancy(v); setVacForm({ titulo: v.titulo, estado: v.estado, descripcion: v.descripcion }); setShowVacancyForm(true); }} className="p-2 text-gray-400 hover:text-[#E6CA65] transition"><Pencil className="w-4 h-4" /></button>
-                    <button onClick={() => handleDeleteVacancy(v.id)} className="p-2 text-gray-400 hover:text-red-400 transition"><Trash2 className="w-4 h-4" /></button>
-                  </div>
+                  {v.adjuntos && v.adjuntos.length > 0 && (
+                    <div className="mt-3 flex gap-2 overflow-x-auto">
+                      {v.adjuntos.filter(a => a.tipo === 'foto').slice(0, 4).map((adj, i) => (
+                        <img key={i} src={adj.url} alt={adj.nombre} className="w-16 h-12 object-cover rounded border border-[#333] flex-shrink-0" />
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

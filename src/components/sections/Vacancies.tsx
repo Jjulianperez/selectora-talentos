@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { FileText, Download, Briefcase } from 'lucide-react';
+import { FileText, Download, Briefcase, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import type { Vacancy } from '../../lib/types';
 
@@ -28,17 +28,32 @@ export default function Vacancies({ onNavigateToPostulate }: Props) {
                   <span className={`text-xs px-2 py-1 rounded-full font-medium whitespace-nowrap ${item.estado === 'Urgente' ? 'bg-red-900/50 text-red-400' : item.estado === 'Finalizada' ? 'bg-gray-700/50 text-gray-400' : 'bg-blue-900/50 text-blue-400'}`}>{item.estado}</span>
                 </div>
                 <p className="text-sm text-gray-400 mb-2 flex-grow">{item.descripcion}</p>
+                {item.links && (
+                  <div className="mb-3 space-y-1">
+                    {item.links.split('\n').filter(Boolean).map((link, i) => (
+                      <a key={i} href={link.startsWith('http') ? link : `https://${link}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-1 text-xs text-blue-400 hover:underline truncate">
+                        <ExternalLink className="w-3 h-3 flex-shrink-0" /> {link}
+                      </a>
+                    ))}
+                  </div>
+                )}
                 {item.adjuntos && item.adjuntos.length > 0 && (
                   <div className="mb-4 border-t border-[#333] pt-3">
                     <p className="text-xs text-gray-500 mb-2">Adjuntos:</p>
-                    <div className="grid grid-cols-3 gap-2">
+                    <div className="grid grid-cols-2 gap-2">
                       {item.adjuntos.map((adj, i) => (
-                        <div key={i} className="media-thumb group">
-                          {adj.tipo === 'foto' && <img src={adj.url} alt={adj.nombre} />}
-                          {adj.tipo === 'video' && <video src={adj.url} muted />}
-                          {adj.tipo === 'documento' && (<div className="flex flex-col items-center justify-center h-full p-2 text-center bg-[#252525]"><FileText className="w-6 h-6 text-[#E6CA65] mb-1" /><span className="text-[10px] text-gray-400 truncate w-full">{adj.nombre}</span></div>)}
-                          <a href={adj.url} target="_blank" download={adj.nombre} className="media-overlay"><Download className="w-5 h-5 text-white" /></a>
-                        </div>
+                        <a key={i} href={adj.url} target="_blank" rel="noopener noreferrer" className="block bg-[#252525] border border-[#333] rounded-lg overflow-hidden hover:border-[#555] transition group">
+                          {adj.tipo === 'foto' ? (
+                            <img src={adj.url} alt={adj.nombre} className="w-full h-28 object-cover" />
+                          ) : adj.tipo === 'video' ? (
+                            <div className="relative w-full h-28 bg-[#1A1A1A] flex items-center justify-center"><video src={adj.url} className="w-full h-full object-cover" /><span className="absolute text-xs text-white bg-black/50 px-2 py-1 rounded">Video</span></div>
+                          ) : (
+                            <div className="flex flex-col items-center justify-center h-28 p-2 text-center">
+                              <FileText className="w-8 h-8 text-[#E6CA65] mb-1" />
+                              <span className="text-[10px] text-gray-400 truncate w-full">{adj.nombre}</span>
+                            </div>
+                          )}
+                        </a>
                       ))}
                     </div>
                   </div>

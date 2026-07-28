@@ -5,9 +5,9 @@
 -- primero ejecuta el bloque "DROP" que está al final.
 --
 -- CAMBIOS v6:
--- - Se agregaron columnas descripcion, adjuntos y links a candidates.
--- - El formulario de postulación ahora permite fotos, descripción,
---   links y archivos adjuntos (como las novedades).
+-- - Se agregó columna links a vacancies.
+-- - El admin puede agregar descripcion, imagenes, archivos y links a las vacantes,
+--   igual que en las novedades.
 -- ============================================
 
 -- ============================================
@@ -94,6 +94,7 @@ CREATE TABLE vacancies (
   titulo TEXT NOT NULL,
   estado TEXT DEFAULT 'Urgente',
   descripcion TEXT DEFAULT '',
+  links TEXT DEFAULT '',
   adjuntos JSONB DEFAULT '[]'::jsonb,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
