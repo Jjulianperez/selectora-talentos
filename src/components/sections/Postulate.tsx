@@ -1,5 +1,5 @@
 ﻿import { useState, useEffect, useRef } from 'react';
-import { CheckCircle, Paperclip, AlertCircle, Brain, Upload, X, Link, FileText, Image } from 'lucide-react';
+import { CheckCircle, Paperclip, AlertCircle, Brain } from 'lucide-react';
 import { areasATS, habilidadesATS } from '../../data/areas';
 import { testModules } from '../../data/tests';
 import { supabase, BUCKET_NAME } from '../../lib/supabase';
@@ -64,10 +64,6 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
   const [testResults, setTestResults] = useState<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
   const testResultsRef = useRef<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
   const [showTests, setShowTests] = useState(false);
-  const [descripcion, setDescripcion] = useState('');
-  const [adjuntos, setAdjuntos] = useState<Attachment[]>([]);
-  const [links, setLinks] = useState('');
-  const [uploadingAdjuntos, setUploadingAdjuntos] = useState(false);
 
   useEffect(() => {
     supabase.from('vacancies').select('id, titulo').order('created_at', { ascending: false }).then(({ data }) => {
@@ -110,23 +106,6 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
   const handleCvUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) setForm(prev => ({ ...prev, cv: { nombre: file.name, tipo: 'documento', url: URL.createObjectURL(file) } }));
-  };
-
-  const handleAdjuntosUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    setUploadingAdjuntos(true);
-    const nuevos: Attachment[] = [];
-    for (const f of files) {
-      const filePath = `adjuntos/${Date.now()}_${f.name}`;
-      const { data } = await supabase.storage.from(BUCKET_NAME).upload(filePath, f);
-      if (data) {
-        const { data: urlData } = supabase.storage.from(BUCKET_NAME).getPublicUrl(data.path);
-        const tipo = f.type.includes('image') ? 'foto' : f.type.includes('video') ? 'video' : 'documento';
-        nuevos.push({ nombre: f.name, tipo, url: urlData.publicUrl });
-      }
-    }
-    setAdjuntos(prev => [...prev, ...nuevos]);
-    setUploadingAdjuntos(false);
   };
 
   const doSubmit = async () => {
@@ -181,10 +160,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
       anios_exp: form.aniosExp, ultimo_cargo: form.ultimoCargo,
       ultima_empresa: form.ultimaEmpresa, cv: cvData,
         test_results: testResultsParaEnviar,
-      descripcion,
-      adjuntos,
-      links,
-      observaciones: '',
+        observaciones: '',
     };
 
     const { error } = await supabase.from('candidates').insert(candidate);
@@ -199,9 +175,6 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
     setSubmitted(true);
     onPostulation(`Nueva postulación: ${form.nombre} para ${puestoFinal}`);
     setForm(emptyForm);
-    setDescripcion('');
-    setAdjuntos([]);
-    setLinks('');
     setTestResults([]);
     setShowTests(false);
   };
@@ -373,59 +346,8 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
             </div>
           </div>
 
-          {/* Presentación */}
           <div className="form-section">
             <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '6' : '5'}>
-              <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Presentación</h3>
-            </div>
-            <div className="mt-4 space-y-4">
-              <div>
-                <label className="form-label">Descripción / Carta de presentación (Opcional)</label>
-                <textarea value={descripcion} onChange={e => setDescripcion(e.target.value)} rows={4} placeholder="Contanos sobre vos, tu experiencia y por qué te gustaría formar parte..." className={inputClass + ' resize-none'} />
-              </div>
-              <div>
-                <label className="form-label">Links de interés (Opcional)</label>
-                <textarea value={links} onChange={e => setLinks(e.target.value)} rows={2} placeholder="Portfolio, GitHub, sitio web, etc. (un link por línea)" className={inputClass + ' resize-none'} />
-              </div>
-            </div>
-          </div>
-
-          {/* Adjuntar fotos / archivos */}
-          <div className="form-section">
-            <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '7' : '6'}>
-              <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Fotos y Archivos (Opcional)</h3>
-            </div>
-            <p className="text-sm text-gray-400 mb-4">Podés adjuntar fotos, certificados o cualquier documento que quieras compartir con la consultora.</p>
-            <div className="mt-4 bg-[#222] p-4 rounded-lg border border-dashed border-[#444]">
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2 bg-[#2D2D2D] border border-[#555] text-gray-300 px-4 py-2 rounded-lg cursor-pointer hover:bg-[#383838] transition text-sm">
-                  <Upload className="w-4 h-4" /> Seleccionar archivos
-                  <input type="file" multiple onChange={handleAdjuntosUpload} className="hidden" accept="image/*,video/*,.pdf,.doc,.docx" />
-                </label>
-                <span className="text-xs text-gray-500">{adjuntos.length} archivo(s) {uploadingAdjuntos && '— subiendo...'}</span>
-              </div>
-            </div>
-            {adjuntos.length > 0 && (
-              <div className="mt-4 grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {adjuntos.map((adj, i) => (
-                  <div key={i} className="relative bg-[#252525] border border-[#333] rounded-lg p-2 text-center group">
-                    {adj.tipo === 'foto' ? (
-                      <img src={adj.url} alt={adj.nombre} className="w-full h-20 object-cover rounded" />
-                    ) : adj.tipo === 'video' ? (
-                      <div className="w-full h-20 bg-[#1A1A1A] rounded flex items-center justify-center"><span className="text-xs text-gray-400">Video</span></div>
-                    ) : (
-                      <FileText className="w-8 h-8 text-[#E6CA65] mx-auto mt-2" />
-                    )}
-                    <p className="text-[9px] text-gray-500 truncate mt-1">{adj.nombre}</p>
-                    <button type="button" onClick={() => setAdjuntos(prev => prev.filter((_, j) => j !== i))} className="absolute top-1 right-1 bg-red-900/60 text-red-300 rounded-full p-0.5 opacity-0 group-hover:opacity-100 transition-opacity"><X className="w-3 h-3" /></button>
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="form-section">
-            <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '8' : '7'}>
               <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Adjuntar CV</h3>
             </div>
             <div className="mt-4 bg-[#222] p-4 rounded-lg border border-dashed border-[#444] hover:border-[#666] transition-colors">
@@ -439,7 +361,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
 
           {/* Evaluaciones Psicotécnicas */}
           <div className="form-section">
-            <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '9' : '8'}>
+            <div className="form-step" data-step={form.tipoPostulacion === 'puesto' ? '7' : '6'}>
               <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Evaluaciones Psicotécnicas (Opcional)</h3>
             </div>
             <p className="text-sm text-gray-400 mb-4">

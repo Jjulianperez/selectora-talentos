@@ -41,9 +41,6 @@ export interface Candidate {
   ultima_empresa: string;
   cv: Attachment | null;
   test_results: TestResult[];
-  descripcion: string;
-  adjuntos: Attachment[];
-  links: string;
   observaciones: string;
 }
 
