@@ -111,7 +111,7 @@ export default function TestRunner({ existingResults = [], onComplete, onBack }:
           <p className="text-4xl font-extrabold text-[#E6CA65] glow-gold">{resultadoActual.score}</p>
           <p className={`text-sm font-semibold ${colorInterpretacion(resultadoActual.interpretacion)}`}>{resultadoActual.interpretacion}</p>
           <p className="text-xs text-gray-500">Gracias por completar la evaluación.</p>
-          <button onClick={guardarResultado}
+          <button type="button" onClick={guardarResultado}
             className="mt-4 bg-[#E6CA65] text-black font-bold py-2.5 px-8 rounded-lg hover:bg-[#d8bd58] transition text-sm">
             {resultados.length + (resultados.findIndex(r => r.test === resultadoActual.test) >= 0 ? 0 : 1) < testModules.length
               ? 'Siguiente Test'
@@ -131,7 +131,7 @@ export default function TestRunner({ existingResults = [], onComplete, onBack }:
       <div className="w-full space-y-6">
         <div className="bg-[#1A1A1A] p-6 sm:p-8 rounded-xl border border-[#2A2A2A] shadow-lg">
           <div className="flex items-center justify-between mb-2">
-            <button onClick={() => { setTestActivo(null); setCancelConfirm(false); }} className="text-gray-400 hover:text-gray-200 flex items-center gap-1 text-xs">
+            <button type="button" onClick={() => { setTestActivo(null); setCancelConfirm(false); }} className="text-gray-400 hover:text-gray-200 flex items-center gap-1 text-xs">
               <ChevronLeft className="w-4 h-4" /> Volver
             </button>
             <span className="text-xs text-gray-500 font-medium">{respondidas} / {totalPreguntas}</span>
@@ -143,7 +143,7 @@ export default function TestRunner({ existingResults = [], onComplete, onBack }:
           <p className="text-lg text-white mb-6 font-medium leading-relaxed">{testActivo.preguntas[pasoTest].p}</p>
           <div className="space-y-3">
             {testActivo.preguntas[pasoTest].r.map((opcion, i) => (
-              <button key={i} onClick={() => enviarRespuestaTest(i)}
+              <button type="button" key={i} onClick={() => enviarRespuestaTest(i)}
                 className="w-full text-left p-4 rounded-lg bg-[#252525] border border-[#444] hover:border-[#E6CA65] hover:bg-[#E6CA65]/5 transition-all duration-200 text-gray-200 text-base flex items-center justify-between group">
                 <span>{opcion}</span>
                 <ArrowRight className="w-4 h-4 text-gray-600 group-hover:text-[#E6CA65] transition-colors" />
@@ -153,11 +153,11 @@ export default function TestRunner({ existingResults = [], onComplete, onBack }:
           {cancelConfirm ? (
             <div className="mt-6 flex items-center gap-3 justify-center">
               <span className="text-xs text-gray-400">¿Cancelar test? Se perderán las respuestas.</span>
-              <button onClick={() => { setTestActivo(null); setCancelConfirm(false); }} className="text-xs text-red-400 border border-red-800/50 px-3 py-1.5 rounded-lg hover:bg-red-900/20">Sí, cancelar</button>
-              <button onClick={() => setCancelConfirm(false)} className="text-xs text-gray-400 hover:text-white transition-colors">Seguir</button>
+              <button type="button" onClick={() => { setTestActivo(null); setCancelConfirm(false); }} className="text-xs text-red-400 border border-red-800/50 px-3 py-1.5 rounded-lg hover:bg-red-900/20">Sí, cancelar</button>
+              <button type="button" onClick={() => setCancelConfirm(false)} className="text-xs text-gray-400 hover:text-white transition-colors">Seguir</button>
             </div>
           ) : (
-            <button onClick={() => setCancelConfirm(true)} className="mt-6 text-xs text-gray-500 hover:text-red-400 transition-colors">Cancelar Test</button>
+            <button type="button" onClick={() => setCancelConfirm(true)} className="mt-6 text-xs text-gray-500 hover:text-red-400 transition-colors">Cancelar Test</button>
           )}
         </div>
       </div>
@@ -168,7 +168,7 @@ export default function TestRunner({ existingResults = [], onComplete, onBack }:
     <div className="w-full space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="text-lg font-bold text-[#E6CA65]">Seleccioná un test</h3>
-        <button onClick={volverAlFormulario} className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1">
+        <button type="button" onClick={volverAlFormulario} className="text-xs text-gray-400 hover:text-gray-200 flex items-center gap-1">
           <ChevronLeft className="w-3 h-3" /> Volver al formulario
         </button>
       </div>
@@ -193,7 +193,7 @@ export default function TestRunner({ existingResults = [], onComplete, onBack }:
                   </div>
                 )}
               </div>
-              <button onClick={() => iniciarTest(t)}
+              <button type="button" onClick={() => iniciarTest(t)}
                 className={`mt-4 font-bold py-2.5 px-6 rounded-lg text-sm flex items-center justify-center gap-2 transition-all duration-200 ${
                   completado
                     ? 'bg-emerald-700/30 text-emerald-300 border border-emerald-700/50 hover:bg-emerald-700/40'
@@ -207,7 +207,7 @@ export default function TestRunner({ existingResults = [], onComplete, onBack }:
       </div>
 
       {todosCompletados && (
-        <button onClick={() => onComplete(resultados)}
+        <button type="button" onClick={() => onComplete(resultados)}
           className="w-full bg-emerald-600 text-white font-bold py-4 rounded-lg hover:bg-emerald-500 transition-all duration-200 text-lg flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/30">
           <CheckCircle className="w-5 h-5" /> Continuar con la Postulación
         </button>
