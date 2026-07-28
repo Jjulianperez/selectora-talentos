@@ -13,11 +13,11 @@ export default function Header({ isAdmin = false, candidatosCount = 0 }: Props) 
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-black tracking-wider text-[#E6CA65] glow-gold leading-tight">
             CV CONSULTORA
           </h1>
-          <p className="text-sm sm:text-base font-semibold text-[#F2D2A0] mt-0.5">
-            Lic. Gisela Palacios
-          </p>
           <p className="text-xs sm:text-sm font-medium tracking-widest uppercase text-[#fcf6ba]/50 mt-0.5">
             Gestión de Recursos Humanos
+          </p>
+          <p className="text-sm sm:text-base font-semibold text-[#F2D2A0] mt-0.5">
+            Lic. Gisela Palacios
           </p>
         </div>
 
