@@ -62,8 +62,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
   const [submitError, setSubmitError] = useState('');
   const [vacancies, setVacancies] = useState<{ id: string; titulo: string }[]>([]);
   const [testResults, setTestResults] = useState<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
-  const testResultsRef = useRef(testResults);
-  testResultsRef.current = testResults;
+  const testResultsRef = useRef<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
   const [showTests, setShowTests] = useState(false);
 
   useEffect(() => {
@@ -164,7 +163,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
         observaciones: '',
     };
 
-    console.log('Enviando postulación con test_results:', JSON.stringify(testResultsParaEnviar));
+    console.log('doSubmit - testResultsRef.current es array?', Array.isArray(testResultsParaEnviar), 'largo:', testResultsParaEnviar?.length, 'valor:', JSON.stringify(testResultsParaEnviar));
     const { error } = await supabase.from('candidates').insert(candidate);
     if (error) {
       console.error('Error guardando postulación:', error);
@@ -181,9 +180,9 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
     setShowTests(false);
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    doSubmit();
+    await doSubmit();
   };
 
   const CheckboxPills = ({ options, field }: { options: string[]; field: 'areasExp' | 'habilidades' }) => (
@@ -388,6 +387,8 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
                 <TestRunner
                   existingResults={testResults}
                   onComplete={(results) => {
+                    testResultsRef.current = results;
+                    console.log('TestRunner onComplete - saving to ref:', JSON.stringify(results));
                     setTestResults(results);
                     setShowTests(false);
                   }}
