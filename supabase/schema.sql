@@ -1,15 +1,13 @@
 -- ============================================
--- CV Consultora - Supabase Schema v5
+-- CV Consultora - Supabase Schema v6
 -- Ejecutar esto en el SQL Editor de Supabase
 -- IMPORTANTE: Si ya ejecutaste la versión anterior,
 -- primero ejecuta el bloque "DROP" que está al final.
 --
--- CAMBIOS v5:
--- - Los tests ya no son una página independiente.
--- - Son un paso opcional dentro del formulario de postulación.
--- - Los resultados se guardan en test_results (JSONB) de candidates.
--- - La tabla test_scores se mantiene solo para datos históricos.
--- - Se agregó columna tests_realizados a candidates.
+-- CAMBIOS v6:
+-- - Se agregaron columnas descripcion, adjuntos y links a candidates.
+-- - El formulario de postulación ahora permite fotos, descripción,
+--   links y archivos adjuntos (como las novedades).
 -- ============================================
 
 -- ============================================
@@ -84,6 +82,9 @@ CREATE TABLE candidates (
   ultima_empresa TEXT DEFAULT '',
   cv JSONB DEFAULT NULL,
   test_results JSONB DEFAULT '[]'::jsonb,
+  descripcion TEXT DEFAULT '',
+  adjuntos JSONB DEFAULT '[]'::jsonb,
+  links TEXT DEFAULT '',
   observaciones TEXT DEFAULT '',
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
