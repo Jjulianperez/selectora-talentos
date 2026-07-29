@@ -375,8 +375,8 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
               </button>
             )}
 
-            <Modal open={testModalOpen} onClose={() => setTestModalOpen(false)} size="full">
-              <div className="p-4 sm:p-6 max-h-[80vh] overflow-y-auto">
+            <Modal open={testModalOpen} onClose={() => setTestModalOpen(false)} size="xl">
+              <div className="p-4 sm:p-6">
                 <TestRunner
                   existingResults={testResults}
                   onComplete={(results) => {
