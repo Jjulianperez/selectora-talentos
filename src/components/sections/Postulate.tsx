@@ -63,7 +63,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
   const [vacancies, setVacancies] = useState<{ id: string; titulo: string }[]>([]);
   const [testResults, setTestResults] = useState<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
   const testResultsRef = useRef<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
-  const [testModalOpen, setTestModalOpen] = useState(false);
+  const [showTests, setShowTests] = useState(false);
 
   useEffect(() => {
     supabase.from('vacancies').select('id, titulo').order('created_at', { ascending: false }).then(({ data }) => {
@@ -176,7 +176,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
     onPostulation(`Nueva postulación: ${form.nombre} para ${puestoFinal}`);
     setForm(emptyForm);
     setTestResults([]);
-    setTestModalOpen(false);
+    setShowTests(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -368,28 +368,28 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
               Podés completar nuestras evaluaciones antes de enviar tu postulación. Esto permitirá a la consultora conocer mejor tu perfil.
             </p>
 
-            {testResults.length === 0 && (
-              <button type="button" onClick={() => setTestModalOpen(true)}
+            {!showTests && testResults.length === 0 && (
+              <button type="button" onClick={() => setShowTests(true)}
                 className="w-full bg-[#E6CA65] text-black font-bold py-3 px-5 rounded-lg hover:bg-[#d8bd58] transition-all duration-200 text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:shadow-[#E6CA65]/10">
                 <Brain className="w-4 h-4" /> Completar tests para la postulación
               </button>
             )}
 
-            <Modal open={testModalOpen} onClose={() => setTestModalOpen(false)} size="xl">
-              <div className="p-4 sm:p-6">
+            {showTests && (
+              <div className="mt-2 animate-fade-up">
                 <TestRunner
                   existingResults={testResults}
                   onComplete={(results) => {
                     testResultsRef.current = results;
                     setTestResults(results);
-                    setTestModalOpen(false);
+                    setShowTests(false);
                   }}
-                  onBack={() => setTestModalOpen(false)}
+                  onBack={() => setShowTests(false)}
                 />
               </div>
-            </Modal>
+            )}
 
-            {testResults.length > 0 && (
+            {testResults.length > 0 && !showTests && (
               <div className="mt-2 bg-emerald-900/10 border border-emerald-700/30 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle className="w-5 h-5 text-emerald-400" />
@@ -402,7 +402,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
                     </span>
                   ))}
                 </div>
-                <button type="button" onClick={() => setTestModalOpen(true)}
+                <button type="button" onClick={() => setShowTests(true)}
                   className="text-xs text-emerald-400 hover:text-emerald-300 underline">
                   Revisar o completar más tests
                 </button>
