@@ -3,7 +3,6 @@ import { CheckCircle, Paperclip, AlertCircle, Brain } from 'lucide-react';
 import { areasATS, habilidadesATS } from '../../data/areas';
 import { testModules } from '../../data/tests';
 import { supabase, BUCKET_NAME } from '../../lib/supabase';
-import Modal from '../ui/Modal';
 import TestRunner from './TestRunner';
 import type { TabId, Attachment, TestResult } from '../../lib/types';
 
@@ -202,19 +201,21 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
         Puedes postularte de manera <strong className="text-[#F2D2A0]">espontánea para nuestra base de datos</strong> o aplicar a un puesto específico. ¡Te permitimos postularte la cantidad de veces que necesites!
       </p>
 
-      <Modal open={submitted} onClose={() => setSubmitted(false)} size="md">
-        <div className="py-12 px-8 text-center flex flex-col items-center gap-5">
-          <div className="w-24 h-24 rounded-full bg-[#E6CA65]/10 flex items-center justify-center border-2 border-[#E6CA65]/20">
-            <CheckCircle className="w-12 h-12 text-[#E6CA65]" />
+      {submitted && (
+        <div className="flex items-center justify-center min-h-[60vh]">
+          <div className="text-center flex flex-col items-center gap-5">
+            <div className="w-24 h-24 rounded-full bg-[#E6CA65]/10 flex items-center justify-center border-2 border-[#E6CA65]/20">
+              <CheckCircle className="w-12 h-12 text-[#E6CA65]" />
+            </div>
+            <div className="space-y-2">
+              <p className="text-gray-100 text-xl font-light leading-relaxed">¡Gracias por sumarte a nuestro equipo!</p>
+              <p className="text-gray-400 text-sm">Pronto nos pondremos en contacto.</p>
+              <h3 className="text-2xl font-bold text-[#E6CA65] tracking-wide mt-3">CV Consultora</h3>
+            </div>
+            <button onClick={() => setSubmitted(false)} className="mt-3 bg-[#E6CA65] text-black font-bold py-3 px-10 rounded-lg hover:bg-[#d8bd58] transition text-sm">Cerrar</button>
           </div>
-          <div className="space-y-2">
-            <p className="text-gray-100 text-xl font-light leading-relaxed">¡Gracias por sumarte a nuestro equipo!</p>
-            <p className="text-gray-400 text-sm">Pronto nos pondremos en contacto.</p>
-            <h3 className="text-2xl font-bold text-[#E6CA65] tracking-wide mt-3">CV Consultora</h3>
-          </div>
-          <button onClick={() => setSubmitted(false)} className="mt-3 bg-[#E6CA65] text-black font-bold py-3 px-10 rounded-lg hover:bg-[#d8bd58] transition text-sm">Cerrar</button>
         </div>
-      </Modal>
+      )}
 
       {!submitted && (
         <form onSubmit={handleSubmit} className="space-y-6">
