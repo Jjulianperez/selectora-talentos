@@ -63,7 +63,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
   const [vacancies, setVacancies] = useState<{ id: string; titulo: string }[]>([]);
   const [testResults, setTestResults] = useState<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
   const testResultsRef = useRef<(TestResult & { respuestas: number[]; interpretacion: string; fecha: string })[]>([]);
-  const [showTests, setShowTests] = useState(false);
+  const [testModalOpen, setTestModalOpen] = useState(false);
 
   useEffect(() => {
     supabase.from('vacancies').select('id, titulo').order('created_at', { ascending: false }).then(({ data }) => {
@@ -176,7 +176,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
     onPostulation(`Nueva postulación: ${form.nombre} para ${puestoFinal}`);
     setForm(emptyForm);
     setTestResults([]);
-    setShowTests(false);
+    setTestModalOpen(false);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -365,37 +365,31 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
               <h3 className="text-lg font-semibold text-[#F2D2A0] mb-4">Evaluaciones Psicotécnicas (Opcional)</h3>
             </div>
             <p className="text-sm text-gray-400 mb-4">
-              Podés completar nuestras evaluaciones antes de enviar tu postulación. Esto permitirá a la consultora conocer mejor tu perfil. También podés enviar la postulación sin realizar los tests.
+              Podés completar nuestras evaluaciones antes de enviar tu postulación. Esto permitirá a la consultora conocer mejor tu perfil.
             </p>
 
-            {!showTests && testResults.length === 0 && (
-              <div className="flex flex-col sm:flex-row gap-3">
-                <button type="button" onClick={() => setShowTests(true)}
-                  className="flex-1 bg-[#E6CA65] text-black font-bold py-3 px-5 rounded-lg hover:bg-[#d8bd58] transition-all duration-200 text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:shadow-[#E6CA65]/10">
-                  <Brain className="w-4 h-4" /> Completar tests para la postulación
-                </button>
-                <button type="button" onClick={() => { testResultsRef.current = []; doSubmit(); }}
-                  className="flex-1 bg-[#252525] text-gray-300 border border-[#444] font-bold py-3 px-5 rounded-lg hover:bg-[#333] hover:border-[#555] transition-all duration-200 text-sm flex items-center justify-center gap-2">
-                  Enviar postulación sin realizar los tests
-                </button>
-              </div>
+            {testResults.length === 0 && (
+              <button type="button" onClick={() => setTestModalOpen(true)}
+                className="w-full bg-[#E6CA65] text-black font-bold py-3 px-5 rounded-lg hover:bg-[#d8bd58] transition-all duration-200 text-sm flex items-center justify-center gap-2 shadow-sm hover:shadow-md hover:shadow-[#E6CA65]/10">
+                <Brain className="w-4 h-4" /> Completar tests para la postulación
+              </button>
             )}
 
-            {showTests && (
-              <div className="mt-2 animate-fade-up">
+            <Modal open={testModalOpen} onClose={() => setTestModalOpen(false)} size="full">
+              <div className="p-4 sm:p-6 max-h-[80vh] overflow-y-auto">
                 <TestRunner
                   existingResults={testResults}
                   onComplete={(results) => {
                     testResultsRef.current = results;
                     setTestResults(results);
-                    setShowTests(false);
+                    setTestModalOpen(false);
                   }}
-                  onBack={() => setShowTests(false)}
+                  onBack={() => setTestModalOpen(false)}
                 />
               </div>
-            )}
+            </Modal>
 
-            {testResults.length > 0 && !showTests && (
+            {testResults.length > 0 && (
               <div className="mt-2 bg-emerald-900/10 border border-emerald-700/30 rounded-lg p-4">
                 <div className="flex items-center gap-2 mb-2">
                   <CheckCircle className="w-5 h-5 text-emerald-400" />
@@ -408,7 +402,7 @@ export default function Postulate({ onNavigate, onPostulation, preselectVacancy,
                     </span>
                   ))}
                 </div>
-                <button type="button" onClick={() => setShowTests(true)}
+                <button type="button" onClick={() => setTestModalOpen(true)}
                   className="text-xs text-emerald-400 hover:text-emerald-300 underline">
                   Revisar o completar más tests
                 </button>
